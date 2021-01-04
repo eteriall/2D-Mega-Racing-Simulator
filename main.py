@@ -367,6 +367,7 @@ def my_draw_polygon(poly, body, fixture):
             xy1, xy2 = vertices[1:3]
             x1, y1, x2, y2 = list(map(int, xy1 + xy2))
             pygame.gfxdraw.aapolygon(screen, ((x1, y1), (x2, y2), (x2, y2)), colors["l"])
+            pygame.draw.line(screen, colors["l"], (x1, y1), (x2, y2), 10)
     except KeyError:
         gfxdraw.filled_polygon(screen, vertices, (255, 0, 255))
 
@@ -463,22 +464,26 @@ class Terrain:
     CHUNK_SIZE = 10
     MAX_ANGLE = 50
     tile_position = b2Vec2(0, -30)
+    n = 0
 
     def __init__(self, level):
         self.PHYSICAL_WORLD = level.PHYSICAL_WORLD
         self.terrains = list()
-        self.entities = list()
+        self.enities_chunks = list()
         self.level = level
+        self.entities_sprite_group = pygame.sprite.Group()
         random.seed(level.RANDOM_SEED)
 
     def create_chunk(self):
         """Создание следующего чанка"""
         chunk = []
-
+        entities_in_chunk = []
         for k in range(self.CHUNK_SIZE):
-            last_tile = self.create_chunk_tile(self.tile_position,
-                                               math.radians(random.randint(-self.MAX_ANGLE, self.MAX_ANGLE)))
+            last_tile, entity = self.create_chunk_tile(self.tile_position,
+                                                       math.radians(random.randint(-self.MAX_ANGLE, self.MAX_ANGLE)))
             chunk.append(last_tile)
+            if entity is not None:
+                entities_in_chunk.append(entity)
             last_fixture = last_tile.fixtures
             if last_fixture[0].shape.vertices[3] == b2Vec2(0, 0):
                 self.last_world_coords = last_tile.GetWorldPoint(last_fixture[0].shape.vertices[0])
@@ -487,17 +492,18 @@ class Terrain:
             self.tile_position = self.last_world_coords
 
         if len(self.terrains) > 1:
-
             chunk.append(self.create_border())
 
             # Удаляем предыдущий чанк
             for body in self.terrains[0]:
                 self.PHYSICAL_WORLD.DestroyBody(body)
             self.terrains = self.terrains[1:]
-            self.entities = self.entities[1:]
+            self.entities_sprite_group.remove(*self.enities_chunks[0])
+            self.enities_chunks = self.enities_chunks[1:]
 
+        self.enities_chunks.append(entities_in_chunk)
         self.terrains.append(chunk)
-        return chunk
+        return chunk, entities_in_chunk
 
     def create_border(self, chunk_index=1):
         # Делаем левый ограничитель, чтобы юзер не выпал за край карты
@@ -519,6 +525,7 @@ class Terrain:
 
     def create_chunk_tile(self, position, angle):
         # Создание клетки чанка
+        self.n += 1
         groundPieceHeight, groundPieceWidth = 80, random.randint(10, 30)
         body_def = b2BodyDef()
         body_def.position = position
@@ -541,11 +548,12 @@ class Terrain:
         fix_def.shape = b2PolygonShape(vertices=newcoords)
         body.CreateFixture(fix_def)
 
-        if self.level.has_entities:
+        entity = None
+        if self.level.has_entities and self.n % 5 == 0:
             pos_x, pos_y = invert((position.x * PPM, (position.y + groundPieceHeight) * PPM))[0]
-            self.level.add_entity((pos_x, pos_y))
+            entity = self.add_entity((pos_x, pos_y))
 
-        return body
+        return body, entity
 
     def rotate_floor_tile(self, coords, angle):
         """Вращаем прямоугольничек клетки для разнообразия рельефа"""
@@ -565,6 +573,27 @@ class Terrain:
             except TypeError as e:
                 print(obj1, obj2, e)
         return False
+
+    def draw_entities(self, surface):
+        for sprite in self.entities_sprite_group:
+            surface.blit(sprite.image, self.level.camera.apply(sprite))
+
+    def add_entity(self, pos, key=None):
+        if key is None:
+            pos = list(pos)
+            sprite = Sprite(self.entities_sprite_group)
+            entity_name = random.choice(list(self.level.LEVEL_ENTITIES.keys()))
+            sprite.image = self.level.LEVEL_ENTITIES[entity_name]
+            sprite.rect = sprite.image.get_rect()
+            align = self.level.LEVEL_ENTITIES_DATA[entity_name]["align"]
+            pos[1] += self.level.LEVEL_ENTITIES_DATA[entity_name]["delta_y"]
+            if align == "bottomleft":
+                sprite.rect.bottomleft = pos
+            if align == "bottomright":
+                sprite.rect.bottomright = pos
+            if align == "midbottom":
+                sprite.rect.midbottom = pos
+            return sprite
 
 
 class Camera:
@@ -907,7 +936,7 @@ class Car:
 class Level:
     def __init__(self, level=None, vehicle=None, menu=None):
         global LINE_COLOR, colors
-        self.entities_sprite_group = pygame.sprite.Group()
+
         # Подгружаем параметры уровня из json
         self.VEHICLE_CODE = vehicle
         self.LEVEL_CODE = vehicle
@@ -928,7 +957,9 @@ class Level:
             colors["t"] = self.GROUND_COLOR
             self.LEVEL_ENTITIES = []
             if "LEVEL_ENTITIES" in level_parameters:
-                self.LEVEL_ENTITIES = [load_image(x) for x in level_parameters["LEVEL_ENTITIES"]]
+                self.LEVEL_ENTITIES_DATA = level_parameters["LEVEL_ENTITIES"]
+                self.LEVEL_ENTITIES = {x: load_image( self.LEVEL_ENTITIES_DATA[x]["path"]) for x in self.LEVEL_ENTITIES_DATA}
+
             self.RANDOM_SEED = level_parameters["seed"]
 
         # Загружаем авто
@@ -958,13 +989,6 @@ class Level:
     def has_entities(self):
         return self.LEVEL_ENTITIES != []
 
-    def add_entity(self, pos, key=None):
-        if key is None:
-            sprite = Sprite(self.entities_sprite_group)
-            sprite.image = random.choice(self.LEVEL_ENTITIES)
-            sprite.rect = sprite.image.get_rect()
-            sprite.rect.midbottom = pos
-
     def exit_level(self):
         if self.exit_level_timer is None:
             self.exit_level_timer = pygame.time.get_ticks()
@@ -982,6 +1006,7 @@ class Level:
     def reset(self):
         for body in self.PHYSICAL_WORLD.bodies:
             self.PHYSICAL_WORLD.DestroyBody(body)
+
         self.terrain = Terrain(self)
         self.terrain.create_chunk()
         self.terrain.create_border(0)
@@ -994,6 +1019,7 @@ class Level:
 
         camera = self.camera
         screen.fill(self.BACKGROUND_COLOR)
+        self.terrain.draw_entities(screen)
 
         btns = pygame.mouse.get_pressed(3)
         keys = pygame.key.get_pressed()
@@ -1036,11 +1062,8 @@ class Level:
         self.VEHICLE.update(events)
         self.camera.update_xy(self.VEHICLE.main_body.position * PPM)
 
-        for sprite in self.entities_sprite_group:
-            screen.blit(sprite.image, self.camera.apply(sprite))
         for sprite in self.VEHICLE.sprite_group:
             screen.blit(sprite.image, self.camera.apply(sprite))
-
 
         self.draw_ui()
         pygame.display.flip()
