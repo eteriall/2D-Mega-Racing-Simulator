@@ -1,0 +1,272 @@
+{
+  "Jeep": {
+    "parameters": {
+      "MAX_CAR_SPEED": 29,
+      "MAX_CAR_REVERSE_SPEED": 10,
+      "ACCELERATION": 5,
+      "ROTATION_SPEED": 1,
+      "BRAKES": 3,
+      "CAR_WIDTH": 4,
+      "CAR_HEIGHT": 1,
+      "CAR_FRICTION": 30,
+      "BODY_DENSITY": 1,
+      "WHEEL_DENSITY": 1,
+      "WHEEL_SIZE": 1.5,
+      "WHEELS_DISTANCE": 1.1,
+      "MAX_FUEL": 100,
+      "WHEEL_DELTA": [
+        1,
+        2.5
+      ],
+      "BODY_SPRITE_DELTA": [
+        -3,
+        0
+      ],
+      "BODY_SPRITE_SCALE": [
+        5,
+        2.5
+      ],
+      "MAX_REVERSE_TIME_STEPS_AMOUNT": 6000,
+      "wheels": {
+        "left_wheel": {
+          "WHEEL_DENSITY": 5,
+          "WHEEL_SIZE": 1,
+          "WHEEL_POSITION": [
+            -3,
+            2.4
+          ]
+        },
+        "right_wheel": {
+          "WHEEL_DENSITY": 5,
+          "WHEEL_SIZE": 1,
+          "WHEEL_POSITION": [
+            3,
+            2.4
+          ]
+        }
+      }
+    },
+    "sprites": {
+      "body": "cars/Car.png",
+      "wheel": "wheels/Tire.png"
+    }
+  },
+  "Race car": {
+    "parameters": {
+      "MAX_FUEL": 1000,
+      "MAX_CAR_SPEED": 50,
+      "MAX_CAR_REVERSE_SPEED": 30,
+      "ACCELERATION": 10,
+      "BRAKES": 5,
+      "ROTATION_SPEED": 1,
+      "CAR_WIDTH": 3,
+      "CAR_HEIGHT": 1,
+      "CAR_FRICTION": 30,
+      "BODY_DENSITY": 1,
+      "WHEEL_DENSITY": 1,
+      "WHEEL_SIZE": 1,
+      "WHEELS_DISTANCE": 1.4,
+      "WHEEL_DELTA": [
+        1,
+        2.5
+      ],
+      "BODY_SPRITE_DELTA": [
+        -3,
+        0
+      ],
+      "BODY_SPRITE_SCALE": [
+        5,
+        2.5
+      ],
+      "MAX_REVERSE_TIME_STEPS_AMOUNT": 6000,
+      "wheels": {
+        "left_wheel": {
+          "WHEEL_DENSITY": 1,
+          "WHEEL_SIZE": 1.2,
+          "WHEEL_POSITION": [
+            -2.8,
+            1
+          ]
+        },
+        "right_wheel": {
+          "WHEEL_DENSITY": 2,
+          "WHEEL_SIZE": 1,
+          "WHEEL_POSITION": [
+            2.8,
+            1
+          ]
+        }
+      }
+    },
+    "sprites": {
+      "body": "cars/car-racecar.png",
+      "wheel": "wheels/Tire.png"
+    }
+  },
+  "Quadracycle": {
+    "parameters": {
+      "MAX_FUEL": 100,
+      "MAX_CAR_SPEED": 29,
+      "MAX_CAR_REVERSE_SPEED": 10,
+      "ROTATION_SPEED": 1,
+      "ACCELERATION": 5,
+      "BRAKES": 3,
+      "CAR_WIDTH": 4,
+      "CAR_HEIGHT": 1,
+      "CAR_FRICTION": 30,
+      "BODY_DENSITY": 1,
+      "WHEEL_DENSITY": 1,
+      "WHEEL_SIZE": 1.5,
+      "WHEELS_DISTANCE": 1.1,
+      "WHEEL_DELTA": [
+        1,
+        2.5
+      ],
+      "BODY_SPRITE_DELTA": [
+        -3,
+        0
+      ],
+      "BODY_SPRITE_SCALE": [
+        5.4,
+        2.7
+      ],
+      "MAX_REVERSE_TIME_STEPS_AMOUNT": 6000,
+      "wheels": {
+        "left_wheel": {
+          "WHEEL_DENSITY": 1,
+          "WHEEL_SIZE": 1.5,
+          "WHEEL_POSITION": [
+            3,
+            2.4
+          ]
+        },
+        "right_wheel": {
+          "WHEEL_DENSITY": 1,
+          "WHEEL_SIZE": 1.5,
+          "WHEEL_POSITION": [
+            -3,
+            2.4
+          ]
+        }
+      }
+    },
+    "sprites": {
+      "body": "cars/car-quadbike.png",
+      "wheel": "wheels/Tire.png"
+    }
+  },
+  "Tourist Bus": {
+    "parameters": {
+      "MAX_FUEL": 100,
+      "MAX_CAR_SPEED": 30,
+      "MAX_CAR_REVERSE_SPEED": 30,
+      "ACCELERATION": 1,
+      "BRAKES": 1,
+      "ROTATION_SPEED": 1,
+      "CAR_WIDTH": 7,
+      "CAR_HEIGHT": 2,
+      "CAR_FRICTION": 30,
+      "BODY_DENSITY": 1,
+      "BODY_SPRITE_DELTA": [
+        -3,
+        0
+      ],
+      "BODY_SPRITE_SCALE": [
+        8,
+        4
+      ],
+      "MAX_REVERSE_TIME_STEPS_AMOUNT": 6000,
+      "wheels": {
+        "left_wheel": {
+          "WHEEL_DENSITY": 20,
+          "WHEEL_SIZE": 1,
+          "WHEEL_POSITION": [
+            -4.3,
+            2.4
+          ]
+        },
+        "right_wheel": {
+          "WHEEL_DENSITY": 20,
+          "WHEEL_SIZE": 1,
+          "WHEEL_POSITION": [
+            5.3,
+            2.4
+          ]
+        }
+      }
+    },
+    "sprites": {
+      "body": "cars/touristbus.png",
+      "wheel": "wheels/Tire.png"
+    }
+  },
+  "Tank": {
+    "parameters": {
+      "MAX_FUEL": 100,
+      "MAX_CAR_SPEED": 20,
+      "MAX_CAR_REVERSE_SPEED": 30,
+      "ACCELERATION": 1,
+      "BRAKES": 5,
+      "ROTATION_SPEED": 0.5,
+      "CAR_WIDTH": 5,
+      "CAR_HEIGHT": 1,
+      "CAR_FRICTION": 1000,
+      "BODY_DENSITY": 1,
+      "BODY_SPRITE_DELTA": [
+        -3,
+        0
+      ],
+      "BODY_SPRITE_SCALE": [
+        8,
+        4
+      ],
+      "MAX_REVERSE_TIME_STEPS_AMOUNT": 6000,
+      "wheels": {
+        "1": {
+          "WHEEL_DENSITY": 5,
+          "WHEEL_SIZE": 1,
+          "WHEEL_POSITION": [
+            -6.5,
+            1
+          ]
+        },
+        "2": {
+          "WHEEL_DENSITY": 5,
+          "WHEEL_SIZE": 1,
+          "WHEEL_POSITION": [
+            -3.7,
+            1.5
+          ]
+        },
+        "3": {
+          "WHEEL_DENSITY": 5,
+          "WHEEL_SIZE": 1,
+          "WHEEL_POSITION": [
+            -0.9,
+            1.5
+          ]
+        },
+        "4": {
+          "WHEEL_DENSITY": 5,
+          "WHEEL_SIZE": 1,
+          "WHEEL_POSITION": [
+            1.8,
+            1.5
+          ]
+        },
+        "5": {
+          "WHEEL_DENSITY": 5,
+          "WHEEL_SIZE": 1,
+          "WHEEL_POSITION": [
+            4.5,
+            1
+          ]
+        }
+      }
+    },
+    "sprites": {
+      "body": "cars/tank.png",
+      "wheel": "wheels/car-tank-tire.png"
+    }
+  }
+}

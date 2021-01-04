@@ -1,0 +1,28 @@
+{
+  "Hills" : {
+    "background": [144, 228, 255],
+    "line-color": [172, 231, 78],
+    "ground-color": [93, 74, 47],
+    "seed": "hills",
+    "preview": "test.png",
+    "gravity": -35
+  },
+
+  "Desert" : {
+    "background": [148, 211, 233],
+    "line-color": [208, 208, 177],
+    "ground-color": [244, 244, 167],
+    "seed": "desert",
+    "preview": "test.png",
+    "gravity": -35
+  },
+
+  "Moon" : {
+    "background": [3, 13, 50],
+    "line-color": [193, 193, 193],
+    "ground-color": [144, 144, 189],
+    "seed": "moon",
+    "preview": "test.png",
+    "gravity": -20
+  }
+}
