@@ -24,5 +24,15 @@
     "seed": "moon",
     "preview": "test.png",
     "gravity": -20
+  },
+
+  "Christmas" : {
+    "background": [3,6,12],
+    "line-color": [202,248,255],
+    "ground-color": [68,153,147],
+    "seed": "christmas",
+    "LEVEL_ENTITIES": ["tree.png"],
+    "preview": "test.png",
+    "gravity": -35
   }
 }
