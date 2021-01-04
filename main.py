@@ -12,6 +12,7 @@ import pygame
 from Box2D import Box2D, b2WheelJointDef, b2Vec2, b2FixtureDef, b2BodyDef, b2PolygonShape, b2ContactListener
 from Box2D.b2 import world, polygonShape, circleShape, staticBody, dynamicBody
 from pygame.rect import Rect
+from pygame.sprite import Sprite
 from pygame_widgets import Button as BrokenButton
 
 pygame.init()
@@ -205,8 +206,8 @@ class MainMenu:
         self.car_names = list(self.cars.keys())
 
         self.player_data = self.load_player_data()
-        self.chosen_car_index = 3
-        self.chosen_level_index = 1
+        self.chosen_car_index = 1
+        self.chosen_level_index = 3
         self.update_category_buttons()
 
     def load_player_data(self):
@@ -460,21 +461,23 @@ class Wheel:
 
 class Terrain:
     CHUNK_SIZE = 10
+    MAX_ANGLE = 50
     tile_position = b2Vec2(0, -30)
 
     def __init__(self, level):
         self.PHYSICAL_WORLD = level.PHYSICAL_WORLD
         self.terrains = list()
+        self.entities = list()
+        self.level = level
         random.seed(level.RANDOM_SEED)
 
     def create_chunk(self):
         """Создание следующего чанка"""
         chunk = []
-        angle_restrictions = 50
 
         for k in range(self.CHUNK_SIZE):
             last_tile = self.create_chunk_tile(self.tile_position,
-                                               math.radians(random.randint(-angle_restrictions, angle_restrictions)))
+                                               math.radians(random.randint(-self.MAX_ANGLE, self.MAX_ANGLE)))
             chunk.append(last_tile)
             last_fixture = last_tile.fixtures
             if last_fixture[0].shape.vertices[3] == b2Vec2(0, 0):
@@ -491,6 +494,7 @@ class Terrain:
             for body in self.terrains[0]:
                 self.PHYSICAL_WORLD.DestroyBody(body)
             self.terrains = self.terrains[1:]
+            self.entities = self.entities[1:]
 
         self.terrains.append(chunk)
         return chunk
@@ -537,10 +541,9 @@ class Terrain:
         fix_def.shape = b2PolygonShape(vertices=newcoords)
         body.CreateFixture(fix_def)
 
-        """if random.randint(0, 1) == 0:
-            pos_x, pos_y = position.x, position.y + 10
-            sphere = world.CreateDynamicBody(position=(pos_x, pos_y))
-            sphere.CreateCircleFixture(radius=.4, density=1, friction=1)"""
+        if self.level.has_entities:
+            pos_x, pos_y = invert((position.x * PPM, (position.y + groundPieceHeight) * PPM))[0]
+            self.level.add_entity((pos_x, pos_y))
 
         return body
 
@@ -904,6 +907,7 @@ class Car:
 class Level:
     def __init__(self, level=None, vehicle=None, menu=None):
         global LINE_COLOR, colors
+        self.entities_sprite_group = pygame.sprite.Group()
         # Подгружаем параметры уровня из json
         self.VEHICLE_CODE = vehicle
         self.LEVEL_CODE = vehicle
@@ -922,6 +926,9 @@ class Level:
             colors["l"] = self.LINE_COLOR
             self.GROUND_COLOR = level_parameters["ground-color"]
             colors["t"] = self.GROUND_COLOR
+            self.LEVEL_ENTITIES = []
+            if "LEVEL_ENTITIES" in level_parameters:
+                self.LEVEL_ENTITIES = [load_image(x) for x in level_parameters["LEVEL_ENTITIES"]]
             self.RANDOM_SEED = level_parameters["seed"]
 
         # Загружаем авто
@@ -946,6 +953,17 @@ class Level:
 
         self.last_message_display_time = 99999999999999999999999999999
         self.message_text = ""
+
+    @property
+    def has_entities(self):
+        return self.LEVEL_ENTITIES != []
+
+    def add_entity(self, pos, key=None):
+        if key is None:
+            sprite = Sprite(self.entities_sprite_group)
+            sprite.image = random.choice(self.LEVEL_ENTITIES)
+            sprite.rect = sprite.image.get_rect()
+            sprite.rect.midbottom = pos
 
     def exit_level(self):
         if self.exit_level_timer is None:
@@ -1018,8 +1036,11 @@ class Level:
         self.VEHICLE.update(events)
         self.camera.update_xy(self.VEHICLE.main_body.position * PPM)
 
+        for sprite in self.entities_sprite_group:
+            screen.blit(sprite.image, self.camera.apply(sprite))
         for sprite in self.VEHICLE.sprite_group:
             screen.blit(sprite.image, self.camera.apply(sprite))
+
 
         self.draw_ui()
         pygame.display.flip()
