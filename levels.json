@@ -5,7 +5,10 @@
     "ground-color": [93, 74, 47],
     "seed": "hills",
     "preview": "test.png",
-    "gravity": -35
+    "LEVEL_ENTITIES_FREQUENCY": 5,
+    "GRAVITY": -35,
+    "MAX_ANGLE": 30,
+    "price": 0
   },
   "Desert" : {
     "background": [148, 211, 233],
@@ -19,8 +22,11 @@
         "delta_y": 10
       }
     },
+    "LEVEL_ENTITIES_FREQUENCY": 3,
     "preview": "test.png",
-    "gravity": -35
+    "GRAVITY": -35,
+    "MAX_ANGLE": 10,
+    "PRICE": 35000
   },
   "Moon" : {
     "background": [3, 13, 50],
@@ -40,9 +46,12 @@
         "delta_y": 10
       }
     },
-    "gravity": -20
+    "LEVEL_ENTITIES_FREQUENCY": 2,
+    "GRAVITY": -20,
+    "MAX_ANGLE": 40,
+    "PRICE": 175000
   },
-  "Christmas": {
+  "North Pole": {
     "background": [3,6,12],
     "line-color": [202,248,255],
     "ground-color": [68,153,147],
@@ -55,6 +64,9 @@
       }
     },
     "preview": "test.png",
-    "gravity": -35
+    "GRAVITY": -35,
+    "MAX_ANGLE": 20,
+    "LEVEL_ENTITIES_FREQUENCY": 5,
+    "PRICE": 1000000
   }
 }
