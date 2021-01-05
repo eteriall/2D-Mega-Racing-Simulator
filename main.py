@@ -462,7 +462,6 @@ class Wheel:
 
 class Terrain:
     CHUNK_SIZE = 10
-    MAX_ANGLE = 50
     tile_position = b2Vec2(0, -30)
     n = 0
 
@@ -480,7 +479,8 @@ class Terrain:
         entities_in_chunk = []
         for k in range(self.CHUNK_SIZE):
             last_tile, entity = self.create_chunk_tile(self.tile_position,
-                                                       math.radians(random.randint(-self.MAX_ANGLE, self.MAX_ANGLE)))
+                                                       math.radians(random.randint(-self.level.MAX_ANGLE,
+                                                                                   self.level.MAX_ANGLE)))
             chunk.append(last_tile)
             if entity is not None:
                 entities_in_chunk.append(entity)
@@ -549,9 +549,9 @@ class Terrain:
         body.CreateFixture(fix_def)
 
         entity = None
-        if self.level.has_entities and self.n % 5 == 0:
+        if self.level.has_entities and self.n % self.level.LEVEL_ENTITIES_FREQUENCY == 0:
             pos_x, pos_y = invert((position.x * PPM, (position.y + groundPieceHeight) * PPM))[0]
-            entity = self.add_entity((pos_x, pos_y))
+            entity = self.add_entity((pos_x, pos_y), angle=angle)
 
         return body, entity
 
@@ -578,26 +578,37 @@ class Terrain:
         for sprite in self.entities_sprite_group:
             surface.blit(sprite.image, self.level.camera.apply(sprite))
 
-    def add_entity(self, pos, key=None):
-        if key is None:
-            pos = list(pos)
-            sprite = Sprite(self.entities_sprite_group)
-            entity_name = random.choice(list(self.level.LEVEL_ENTITIES.keys()))
-            sprite.image = self.level.LEVEL_ENTITIES[entity_name]
-            sprite.rect = sprite.image.get_rect()
-            align = self.level.LEVEL_ENTITIES_DATA[entity_name]["align"]
-            pos[1] += self.level.LEVEL_ENTITIES_DATA[entity_name]["delta_y"]
-            if align == "bottomleft":
-                sprite.rect.bottomleft = pos
-            if align == "bottomright":
-                sprite.rect.bottomright = pos
-            if align == "midbottom":
-                sprite.rect.midbottom = pos
-            return sprite
+    def add_entity(self, pos, angle=0):
+        angle = math.degrees(angle)
+        pos = list(pos)
+
+        entity_name = random.choice(list(self.level.LEVEL_ENTITIES.keys()))
+        entity_data = self.level.LEVEL_ENTITIES_DATA[entity_name]
+        entity_image = self.level.LEVEL_ENTITIES[entity_name]
+
+        sprite = Sprite(self.entities_sprite_group)
+        sprite.image = entity_image
+        sprite.rect = sprite.image.get_rect()
+
+        align = entity_data["align"]
+        pos[1] += entity_data["delta_y"]
+
+        if align == "bottomleft":
+            sprite.rect.bottomleft = pos
+            sprite.image, sprite.rect.topleft = rotate_image(entity_image, sprite.rect.bottomleft,
+                                                             entity_image.get_rect().bottomleft, angle)
+        if align == "bottomright":
+            sprite.rect.bottomright = pos
+        if align == "midbottom":
+            sprite.rect.midbottom = pos
+            sprite.image, sprite.rect.topleft = rotate_image(entity_image, sprite.rect.midbottom,
+                                                             entity_image.get_rect().midbottom, angle)
+
+        return sprite
 
 
 class Camera:
-    delta_y = -200
+    delta_y = -500
 
     def __init__(self, width, height):
         self.state = pygame.Rect(0, 0, width, height)
@@ -949,7 +960,8 @@ class Level:
             if level not in LEVELS_DATA:
                 raise ValueError("Can't find level in json file")
             level_parameters = LEVELS_DATA[level]
-            self.PHYSICAL_WORLD = world(gravity=(0, level_parameters["gravity"]))
+            self.PHYSICAL_WORLD = world(gravity=(0, level_parameters["GRAVITY"]))
+            self.MAX_ANGLE = level_parameters["MAX_ANGLE"]
             self.BACKGROUND_COLOR = level_parameters["background"]
             self.LINE_COLOR = level_parameters["line-color"]
             colors["l"] = self.LINE_COLOR
@@ -958,7 +970,9 @@ class Level:
             self.LEVEL_ENTITIES = []
             if "LEVEL_ENTITIES" in level_parameters:
                 self.LEVEL_ENTITIES_DATA = level_parameters["LEVEL_ENTITIES"]
-                self.LEVEL_ENTITIES = {x: load_image( self.LEVEL_ENTITIES_DATA[x]["path"]) for x in self.LEVEL_ENTITIES_DATA}
+                self.LEVEL_ENTITIES = {x: load_image(self.LEVEL_ENTITIES_DATA[x]["path"]) for x in
+                                       self.LEVEL_ENTITIES_DATA}
+            self.LEVEL_ENTITIES_FREQUENCY = level_parameters["LEVEL_ENTITIES_FREQUENCY"]
 
             self.RANDOM_SEED = level_parameters["seed"]
 
@@ -994,14 +1008,17 @@ class Level:
             self.exit_level_timer = pygame.time.get_ticks()
         self.display_message("Fuel ended!", 100)
         if (pygame.time.get_ticks() - self.exit_level_timer) / 1000 > 5:
-            with open("player_data.json") as f:
-                data = json.load(f)
-                data["money"] += self.level_money
-                data["money"] = int(data["money"])
-            with open("player_data.json", mode="w") as f:
-                json.dump(data, f)
-            self.menu.update_player_data()
+            self.save()
             menu.running = False
+
+    def save(self):
+        with open("player_data.json") as f:
+            data = json.load(f)
+            data["money"] += self.level_money
+            data["money"] = int(data["money"])
+        with open("player_data.json", mode="w") as f:
+            json.dump(data, f)
+        self.menu.update_player_data()
 
     def reset(self):
         for body in self.PHYSICAL_WORLD.bodies:
@@ -1030,6 +1047,7 @@ class Level:
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                self.save()
                 self.menu.running = False
             if event.type == pygame.USEREVENT + 1 and self.VEHICLE.reversing_time:
                 self.VEHICLE.reverse_step()
