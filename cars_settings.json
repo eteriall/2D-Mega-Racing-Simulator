@@ -71,6 +71,7 @@
       }
     }
   },
+
   "Race car": {
     "price": 100000,
     "parameters": {
