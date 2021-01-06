@@ -1,1 +1,1 @@
-{"money": 523900, "games_played": 0, "cars": {"Jeep": {}}, "levels": {"Countryside": {"RECORD": 0, "NEXT_STAGE": 300}}}
+{"money": 223800, "games_played": 0, "cars": {"Jeep": {}, "Race car": {}}, "levels": {"Countryside": {"record": 406, "next_stage": 500}, "North Pole": {"record": 1041, "next_stage": 1050}, "Desert": {"record": 3440, "next_stage": 3600}, "Moon": {"record": 1213, "next_stage": 1500}}}
