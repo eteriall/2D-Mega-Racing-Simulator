@@ -1,3 +1,4 @@
+import copy
 import json
 import math
 import os
@@ -111,6 +112,7 @@ def rotate_around_point(xy, degrees, origin=(0, 0)):
 
 class Button(BrokenButton):
     def __init__(self, win, x, y, width, height, **kwargs):
+        self.userData = kwargs.get('userData', None)
         super(Button, self).__init__(win, x, y, width, height, **kwargs)
 
     def listen(self, events):
@@ -119,7 +121,7 @@ class Button(BrokenButton):
             for event in events:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if self.contains(*event.pos):
-                        self.onClick(*self.onClickParams)
+                        self.onClick(self)
             x, y = pygame.mouse.get_pos()
             if self.contains(x, y) and pygame.mouse.get_pressed(3)[0]:
                 self.colour = self.pressedColour
@@ -137,6 +139,8 @@ class CategoryButton:
 
     def __init__(self, xy, wh, text, onClick, image=None):
         self.size = (xy, wh)
+        self.userData = ''
+
         x, y = xy
         w, h = wh
         self.onClick = onClick
@@ -162,17 +166,19 @@ class CategoryButton:
             fontSize=48,
         )
 
-    def set_content(self, text, image=None, back_text=''):
+    def set_content(self, text='', image=None, backText='',
+                    fontSizeBack=200, fontSizeFront=48,
+                    onClick=None, userData=None):
         xy, wh = self.size
         x, y = xy
         w, h = wh
 
         self.back = Button(
-            screen, x, y, w, h, text=back_text,
+            screen, x, y, w, h, text=backText,
             inactiveColour=self.bg_color,
             pressedColour=self.bg_color,
             textColour=self.textColour,
-            fontSize=200,
+            fontSize=fontSizeBack,
             radius=20,
             image=image
         )
@@ -186,8 +192,9 @@ class CategoryButton:
             pressedColour=self.pressed,
             radius=20,
             textColour=self.textColour,
-            onClick=self.onClick,
-            fontSize=48,
+            onClick=self.onClick if onClick is None else onClick,
+            fontSize=fontSizeFront,
+            userData=userData
         )
 
     def draw(self):
@@ -221,7 +228,7 @@ class MainMenu:
             fontSize=48, margin=20,
             inactiveColour=inactive,
             pressedColour=pressed, radius=20,
-            onClick=self.choose_vehicle,
+            onClick=self.choose_vehicle_screen,
             textColour=textColour
         )
         self.tuning_button = Button(
@@ -229,7 +236,7 @@ class MainMenu:
             fontSize=48, margin=20,
             inactiveColour=inactive,
             pressedColour=pressed, radius=20,
-            onClick=self.customize_vehicle,
+            onClick=self.choose_tuning_screen,
             textColour=textColour
         )
         self.play_button = Button(
@@ -248,7 +255,7 @@ class MainMenu:
             fontSize=48, margin=20,
             inactiveColour=inactive,
             pressedColour=pressed, radius=20,
-            onClick=self.previous_car,
+            onClick=self.next_car,
             textColour=textColour
         )
         right_button = Button(
@@ -257,23 +264,24 @@ class MainMenu:
             inactiveColour=inactive,
             pressedColour=pressed, radius=20,
             onClick=self.next_car,
-            textColour=textColour
+            textColour=textColour,
+            userData="next"
         )
         self.vehicle_screen = [left_button, right_button,
                                CategoryButton((557, 158), (806, 613), "Quadrocycle",
-                                              lambda: self.set_active_screen("tuning"))]
+                                              onClick=self.choose_car)]
 
-        self.tuning_screen = [CategoryButton((262, 237), (318, 500), "Upgrade", lambda: print("Hi")),
-                              CategoryButton((621, 237), (318, 500), "Upgrade", lambda: print("Hi")),
-                              CategoryButton((980, 237), (318, 500), "Upgrade", lambda: print("Hi")),
-                              CategoryButton((1339, 237), (318, 500), "Upgrade", lambda: print("Hi"))]
+        self.tuning_screen = [CategoryButton((262, 237), (318, 500), "Upgrade", lambda x: print("Hi")),
+                              CategoryButton((621, 237), (318, 500), "Upgrade", lambda x: print("Hi")),
+                              CategoryButton((980, 237), (318, 500), "Upgrade", lambda x: print("Hi")),
+                              CategoryButton((1339, 237), (318, 500), "Upgrade", lambda x: print("Hi"))]
 
         left_button = Button(
             screen, 262, 664, 100, 100, text='<',
             fontSize=48, margin=20,
             inactiveColour=inactive,
             pressedColour=pressed, radius=20,
-            onClick=lambda: self.previous_level(),
+            onClick=self.next_level,
             textColour=textColour
         )
         right_button = Button(
@@ -281,11 +289,12 @@ class MainMenu:
             fontSize=48, margin=20,
             inactiveColour=inactive,
             pressedColour=pressed, radius=20,
-            onClick=lambda: self.next_level(),
-            textColour=textColour
+            onClick=self.next_level,
+            textColour=textColour,
+            userData="next"
         )
         self.level_screen = [left_button, right_button,
-                             CategoryButton((413, 151), (1093, 613), "Hills", lambda: self.set_active_screen("car"))]
+                             CategoryButton((413, 151), (1093, 613), "Hills", self.choose_level)]
         self.active_screen = self.level_screen
 
         self.levels = self.get_levels()
@@ -313,12 +322,11 @@ class MainMenu:
                               "level": self.level_screen,
                               "tuning": self.tuning_screen}[screen_name]
 
-    def next_car(self):
-        self.shown_car_index = min(len(self.car_names) - 1, self.shown_car_index + 1)
-        self.update_category_buttons()
-
-    def previous_car(self):
-        self.shown_car_index = max(0, self.shown_car_index - 1)
+    def next_car(self, source=None):
+        if source.userData == 'next':
+            self.shown_car_index = min(len(self.car_names) - 1, self.shown_car_index + 1)
+        else:
+            self.shown_car_index = max(0, self.shown_car_index - 1)
         self.update_category_buttons()
 
     @property
@@ -334,21 +342,29 @@ class MainMenu:
         return list(self.player_data["cars"].keys())
 
     @property
+    def chosen_car_name(self):
+        return self.car_names[self.choosen_car_index]
+
+    @property
+    def chosen_level_name(self):
+        return self.levels_names[self.chosen_level_index]
+
+    @property
     def player_levels_names(self):
-        return list(self.player_data["levels"].keys())
+        return list(self.player_levels.keys())
 
-    def next_level(self):
-        self.shown_level_index = min(len(self.levels_names) - 1, self.shown_level_index + 1)
+    def next_level(self, source=None):
+        if source.userData == "next":
+            self.shown_level_index = min(len(self.levels_names) - 1, self.shown_level_index + 1)
+        else:
+            self.shown_level_index = max(0, self.shown_level_index - 1)
         self.update_category_buttons()
 
-    def previous_level(self):
-        self.shown_level_index = max(0, self.shown_level_index - 1)
-        self.update_category_buttons()
-
-    def play(self):
+    def play(self, source=None):
+        print(self.shown_level_index, self.chosen_level_index, self.shown_car_index, self.choosen_car_index)
         self.running = True
-        self.loaded_level = Level(level=self.levels_names[self.shown_level_index],
-                                  vehicle=self.car_names[self.choosen_car_index],
+        self.loaded_level = Level(level=self.chosen_level_name,
+                                  vehicle=self.chosen_car_name,
                                   menu=self)
         while self.running:
             self.loaded_level.update()
@@ -357,13 +373,14 @@ class MainMenu:
         with open("player_data.json") as f:
             self.player_data = json.load(f)
 
-    def choose_vehicle(self):
+    def choose_vehicle_screen(self, source=None):
         self.active_screen = self.vehicle_screen
 
-    def choose_level_screen(self):
+    def choose_level_screen(self, source=None):
         self.active_screen = self.level_screen
 
-    def customize_vehicle(self):
+    def choose_tuning_screen(self, source=None):
+        self.load_upgrades(self.chosen_car_name)
         self.active_screen = self.tuning_screen
 
     def update(self, surface):
@@ -386,7 +403,7 @@ class MainMenu:
         self.play_button.listen(events)
         self.play_button.draw()
 
-        self.text = self.font.render('{0:,}'.format((self.player_data["money"])).replace(",", ".") + "$", True,
+        self.text = self.font.render('{0:,}'.format((self.player_data["money"])).replace(",", " ") + "$", True,
                                      (255, 255, 255))
         surface.blit(self.text, (1561, 84))
 
@@ -404,6 +421,22 @@ class MainMenu:
         with open("levels.json") as f:
             levels = json.load(f)
         return levels
+
+    def load_upgrades(self, car_name):
+        with open("cars_settings.json") as f:
+            upgrades = json.load(f)[car_name]["upgrades"]
+        for category_button, upgrade_name in zip(self.tuning_screen, list(upgrades.keys())):
+            category_button.set_content(backText=upgrade_name, fontSizeBack=48,
+                                        text="Upgrade", onClick=self.upgrade,
+                                        userData=upgrade_name)
+        """for
+            with open("player_data.json") as f:
+                upgrades = json.load(f)["cars"][car_name]"""
+
+        pass
+
+    def upgrade(self, source):
+        print(source.userData)
 
     def update_category_buttons(self):
 
@@ -430,22 +463,22 @@ class MainMenu:
         level_name = self.levels_names[self.shown_level_index]
         if level_name in self.player_levels_names:
             self.level_screen[-1].onClick = self.choose_level
-            self.level_screen[-1].set_content(level_name)
+            self.level_screen[-1].set_content(level_name, onClick=self.choose_level)
         else:
             self.level_screen[-1].onClick = self.buy_level
             self.level_screen[-1].set_content(f"{level_name} - {self.levels[level_name]['price']}$",
-                                              back_text="LOCKED")
+                                              backText="LOCKED")
 
         car_name = self.car_names[self.shown_car_index]
         if car_name in self.player_cars:
             self.vehicle_screen[-1].onClick = self.choose_car
-            self.vehicle_screen[-1].set_content(car_name)
+            self.vehicle_screen[-1].set_content(car_name, onClick=self.choose_car)
         else:
             self.vehicle_screen[-1].onClick = self.buy_car
             self.vehicle_screen[-1].set_content(f"{car_name} - {self.cars[car_name]['price']}$",
-                                                back_text="LOCKED")
+                                                backText="LOCKED")
 
-    def buy_car(self):
+    def buy_car(self, source=None):
         car_name = self.car_names[self.shown_car_index]
         car_data = self.get_cars()[car_name]
         price = car_data["price"]
@@ -457,18 +490,19 @@ class MainMenu:
 
     def save_player_data(self):
         with open("player_data.json", mode="w") as f:
-            print(self.player_data)
             json.dump(self.player_data, f)
 
-    def choose_car(self):
+    def choose_car(self, source=None):
         self.choosen_car_index = self.shown_car_index
         self.active_screen = self.tuning_screen
+        self.load_upgrades(self.chosen_car_name)
 
-    def choose_level(self):
+    def choose_level(self, source=None):
         self.chosen_level_index = self.shown_level_index
+        print(self.chosen_level_index)
         self.active_screen = self.vehicle_screen
 
-    def buy_level(self):
+    def buy_level(self, source=None):
         level_name = self.levels_names[self.shown_level_index]
         level_data = self.get_levels()[level_name]
         price = level_data["price"]
@@ -476,7 +510,6 @@ class MainMenu:
             self.player_data["money"] -= int(self.player_data["money"] - price)
             self.player_data["levels"][level_name] = {"record": 0, "next_stage": level_data["stage_step"]}
             self.save_player_data()
-            print("completed")
             self.update_category_buttons()
 
 
@@ -1044,8 +1077,8 @@ class Level:
 
             self.GROUND_COLOR = level_parameters["ground-color"]
 
-            self.level_record = self.menu.player_data["levels"][level]["record"]
-            self.next_target = self.menu.player_data["levels"][level]["next_stage"]
+            self.level_record = self.menu.player_levels[level]["record"]
+            self.next_target = self.menu.player_levels[level]["next_stage"]
             self.stage_step = self.menu.levels[level]["stage_step"]
 
             self.LEVEL_ENTITIES = []
@@ -1218,7 +1251,7 @@ class Level:
 
         # Coins
         coins_text = int(self.level_money + self.menu.player_data["money"])
-        coins_text = '{0:,}'.format((coins_text)).replace(",", ".")
+        coins_text = '{0:,}'.format((coins_text)).replace(",", " ")
         coins = sf_pro_font_72.render(coins_text, True,
                                       (255, 255, 255))
         screen.blit(coins, (120, 220))
