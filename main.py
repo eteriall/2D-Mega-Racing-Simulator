@@ -162,10 +162,21 @@ class CategoryButton:
             fontSize=48,
         )
 
-    def set_content(self, text, image=None):
+    def set_content(self, text, image=None, back_text=''):
         xy, wh = self.size
         x, y = xy
         w, h = wh
+
+        self.back = Button(
+            screen, x, y, w, h, text=back_text,
+            inactiveColour=self.bg_color,
+            pressedColour=self.bg_color,
+            textColour=self.textColour,
+            fontSize=200,
+            radius=20,
+            image=image
+        )
+
         margin = 20
         x, y = x + margin, y + h - 80 - margin
         w, h = w - 2 * margin, 80
@@ -177,13 +188,6 @@ class CategoryButton:
             textColour=self.textColour,
             onClick=self.onClick,
             fontSize=48,
-        )
-        self.back = Button(
-            screen, x, y, w, h, text='',
-            inactiveColour=self.bg_color,
-            pressedColour=self.bg_color,
-            radius=20,
-            image=image
         )
 
     def draw(self):
@@ -382,7 +386,8 @@ class MainMenu:
         self.play_button.listen(events)
         self.play_button.draw()
 
-        self.text = self.font.render('{0:,}'.format((self.player_data["money"])).replace(",", ".") + "$", True, (255, 255, 255))
+        self.text = self.font.render('{0:,}'.format((self.player_data["money"])).replace(",", ".") + "$", True,
+                                     (255, 255, 255))
         surface.blit(self.text, (1561, 84))
 
         for elem in self.active_screen:
@@ -428,7 +433,8 @@ class MainMenu:
             self.level_screen[-1].set_content(level_name)
         else:
             self.level_screen[-1].onClick = self.buy_level
-            self.level_screen[-1].set_content(f"{level_name} - {self.levels[level_name]['price']}$")
+            self.level_screen[-1].set_content(f"{level_name} - {self.levels[level_name]['price']}$",
+                                              back_text="LOCKED")
 
         car_name = self.car_names[self.shown_car_index]
         if car_name in self.player_cars:
@@ -436,7 +442,8 @@ class MainMenu:
             self.vehicle_screen[-1].set_content(car_name)
         else:
             self.vehicle_screen[-1].onClick = self.buy_car
-            self.vehicle_screen[-1].set_content(f"{car_name} - {self.cars[car_name]['price']}$")
+            self.vehicle_screen[-1].set_content(f"{car_name} - {self.cars[car_name]['price']}$",
+                                                back_text="LOCKED")
 
     def buy_car(self):
         car_name = self.car_names[self.shown_car_index]
