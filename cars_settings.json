@@ -71,7 +71,6 @@
       }
     }
   },
-
   "Race car": {
     "price": 100000,
     "parameters": {
@@ -142,6 +141,12 @@
         "price_multiplier": 1.5,
         "max_value": 150,
         "levels": 3
+      },
+      "CAR_FRICTION": {
+        "start_price": 10000,
+        "price_multiplier": 1.5,
+        "max_value": 100,
+        "levels": 5
       }
     }
   },

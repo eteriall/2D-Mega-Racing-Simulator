@@ -363,11 +363,24 @@ class MainMenu:
             self.shown_level_index = max(0, self.shown_level_index - 1)
         self.update_category_buttons()
 
+    def get_upgraded_parameters(self):
+        upgrade_values = self.player_data["cars"][self.chosen_car_name]
+        car_data = self.get_cars()[self.chosen_car_name]
+        for parameter, level in upgrade_values.items():
+            print(parameter, level)
+            upgrade_data = car_data["upgrades"][parameter]
+            one_part = (upgrade_data["max_value"] - car_data["parameters"][parameter]) / upgrade_data["levels"]
+            upgrade_values[parameter] = level * one_part + car_data["parameters"][parameter]
+        print(upgrade_values)
+        return upgrade_values
+
     def play(self, source=None):
         self.running = True
+        modifications = self.get_upgraded_parameters()
         self.loaded_level = Level(level=self.chosen_level_name,
                                   vehicle=self.chosen_car_name,
-                                  menu=self)
+                                  menu=self,
+                                  vehicle_modifications=modifications)
         while self.running:
             self.loaded_level.update()
 
@@ -466,16 +479,6 @@ class MainMenu:
         self.save_player_data()
         self.load_upgrades(self.chosen_car_name)
 
-        """one_part = (upgrade_data["max_value"] - car_data["parameters"][upgrade_value]) / upgrade_data["levels"]"""
-
-        """
-        "start_price": 10000,
-        "price_multiplier": 1.5,
-        "max_value": 30,
-        "levels": 5
-        """
-        print()
-
     def update_category_buttons(self):
 
         if self.shown_level_index == 0:
@@ -539,7 +542,7 @@ class MainMenu:
         level_data = self.get_levels()[level_name]
         price = level_data["price"]
         if price <= self.player_data["money"]:
-            self.player_data["money"] -= int(self.player_data["money"] - price)
+            self.player_data["money"] = int(self.player_data["money"] - price)
             self.player_data["levels"][level_name] = {"record": 0, "next_stage": level_data["stage_step"]}
             self.save_player_data()
             self.update_category_buttons()
@@ -821,7 +824,8 @@ class ListenerManager(b2ContactListener):
 
 
 class Car:
-    def __init__(self, vehicle_code="", level=None, position=(10, 70), ):
+    def __init__(self, vehicle_code="", level=None, position=(10, 70), modifications=None):
+
         with open("cars_settings.json", "r") as read_file:
             car_data = json.load(read_file)
             if vehicle_code not in car_data:
@@ -876,6 +880,10 @@ class Car:
             self.car_body_image = pygame.transform.scale(self.car_body_image, (
                 int(self.BODY_SPRITE_SCALE[0] * PPM * 2), int(self.BODY_SPRITE_SCALE[1] * PPM * 2)))
 
+        if modifications is not None:
+            for key in modifications:
+                if hasattr(self, key):
+                    setattr(self, key, modifications[key])
         # Переменные
         self.rect = pygame.rect.Rect(0, 0, 0, 0)
         self.sprite_group = pygame.sprite.Group()
@@ -1091,9 +1099,10 @@ class Car:
 
 
 class Level:
-    def __init__(self, level=None, vehicle=None, menu=None):
+    def __init__(self, level=None, vehicle=None, menu=None, vehicle_modifications=None):
         global LINE_COLOR, colors
 
+        self.modifications = vehicle_modifications
         # Подгружаем параметры уровня из json
         self.VEHICLE_CODE = vehicle
         self.LEVEL_CODE = level
@@ -1131,7 +1140,7 @@ class Level:
             self.RANDOM_SEED = level_parameters["seed"]
 
         # Загружаем авто
-        self.VEHICLE = Car(self.VEHICLE_CODE, self)
+        self.VEHICLE = Car(self.VEHICLE_CODE, self, modifications=self.modifications)
 
         # Создаём камеру
         self.camera = Camera(1000000, 1000)
@@ -1186,7 +1195,7 @@ class Level:
         self.terrain.create_border(0)
 
         self.camera.set_new_restrictions(startx=0)
-        self.VEHICLE = Car(self.VEHICLE_CODE, self)
+        self.VEHICLE = Car(self.VEHICLE_CODE, self, modifications=self.modifications)
 
     def update(self):
         global camera
