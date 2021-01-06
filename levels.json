@@ -4,10 +4,11 @@
     "line-color": [172, 231, 78],
     "ground-color": [93, 74, 47],
     "seed": "hills",
+    "stage_step": 150,
     "preview": "test.png",
-    "LEVEL_ENTITIES_FREQUENCY": 5,
-    "GRAVITY": -35,
-    "MAX_ANGLE": 30,
+    "level_entities_frequency": 5,
+    "gravity": -35,
+    "max_angle": 30,
     "price": 0
   },
   "Desert" : {
@@ -15,26 +16,28 @@
     "line-color": [208, 208, 177],
     "ground-color": [244, 244, 167],
     "seed": "desert",
-    "LEVEL_ENTITIES": {
+    "stage_step": 150,
+    "level_entities": {
       "cactus": {
         "path": "cactus.png",
         "align": "midbottom",
         "delta_y": 10
       }
     },
-    "LEVEL_ENTITIES_FREQUENCY": 3,
+    "level_entities_frequency": 3,
     "preview": "test.png",
-    "GRAVITY": -35,
-    "MAX_ANGLE": 10,
-    "PRICE": 35000
+    "gravity": -35,
+    "max_angle": 10,
+    "price": 35000
   },
   "Moon" : {
     "background": [3, 13, 50],
     "line-color": [193, 193, 193],
     "ground-color": [144, 144, 189],
     "seed": "moon",
+    "stage_step": 150,
     "preview": "test.png",
-    "LEVEL_ENTITIES": {
+    "level_entities": {
       "flag_rus": {
         "path": "flag_rus.png",
         "align": "bottomleft",
@@ -46,27 +49,33 @@
         "delta_y": 10
       }
     },
-    "LEVEL_ENTITIES_FREQUENCY": 2,
-    "GRAVITY": -20,
-    "MAX_ANGLE": 40,
-    "PRICE": 175000
+    "level_entities_frequency": 2,
+    "gravity": -20,
+    "max_angle": 40,
+    "price": 175000
   },
   "North Pole": {
     "background": [3,6,12],
     "line-color": [202,248,255],
     "ground-color": [68,153,147],
     "seed": "christmas",
-    "LEVEL_ENTITIES": {
+    "stage_step": 150,
+    "level_entities": {
       "tree": {
         "path": "tree.png",
         "align": "midbottom",
         "delta_y": 10
+      },
+      "present": {
+        "path": "present.png",
+        "align": "midbottom",
+        "delta_y": 1
       }
     },
     "preview": "test.png",
-    "GRAVITY": -35,
-    "MAX_ANGLE": 20,
-    "LEVEL_ENTITIES_FREQUENCY": 5,
-    "PRICE": 1000000
+    "gravity": -35,
+    "max_angle": 20,
+    "level_entities_frequency": 5,
+    "price": 300000
   }
 }
