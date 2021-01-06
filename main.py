@@ -123,7 +123,7 @@ class MainMenu:
             fontSize=48, margin=20,
             inactiveColour=inactive,
             pressedColour=pressed, radius=20,
-            onClick=lambda: self.choose_level(),
+            onClick=self.choose_level_screen,
             textColour=textColour,
 
         )
@@ -132,7 +132,7 @@ class MainMenu:
             fontSize=48, margin=20,
             inactiveColour=inactive,
             pressedColour=pressed, radius=20,
-            onClick=lambda: self.choose_vehicle(),
+            onClick=self.choose_vehicle,
             textColour=textColour
         )
         self.tuning_button = Button(
@@ -140,7 +140,7 @@ class MainMenu:
             fontSize=48, margin=20,
             inactiveColour=inactive,
             pressedColour=pressed, radius=20,
-            onClick=lambda: self.customize_vehicle(),
+            onClick=self.customize_vehicle,
             textColour=textColour
         )
         self.play_button = Button(
@@ -148,7 +148,7 @@ class MainMenu:
             fontSize=48, margin=20,
             inactiveColour=inactive,
             pressedColour=pressed, radius=20,
-            onClick=lambda: self.play(),
+            onClick=self.play,
             textColour=textColour
         )
 
@@ -159,7 +159,7 @@ class MainMenu:
             fontSize=48, margin=20,
             inactiveColour=inactive,
             pressedColour=pressed, radius=20,
-            onClick=lambda: self.previous_car(),
+            onClick=self.previous_car,
             textColour=textColour
         )
         right_button = Button(
@@ -167,7 +167,7 @@ class MainMenu:
             fontSize=48, margin=20,
             inactiveColour=inactive,
             pressedColour=pressed, radius=20,
-            onClick=lambda: self.next_car(),
+            onClick=self.next_car,
             textColour=textColour
         )
         self.vehicle_screen = [left_button, right_button,
@@ -206,8 +206,12 @@ class MainMenu:
         self.car_names = list(self.cars.keys())
 
         self.player_data = self.load_player_data()
-        self.chosen_car_index = 1
-        self.chosen_level_index = 3
+
+        self.chosen_level_index = 0
+        self.choosen_car_index = 0
+
+        self.shown_car_index = 1
+        self.shown_level_index = 3
         self.update_category_buttons()
 
     def load_player_data(self):
@@ -221,25 +225,41 @@ class MainMenu:
                               "tuning": self.tuning_screen}[screen_name]
 
     def next_car(self):
-        self.chosen_car_index = min(len(self.car_names) - 1, self.chosen_car_index + 1)
+        self.shown_car_index = min(len(self.car_names) - 1, self.shown_car_index + 1)
         self.update_category_buttons()
 
     def previous_car(self):
-        self.chosen_car_index = max(0, self.chosen_car_index - 1)
+        self.shown_car_index = max(0, self.shown_car_index - 1)
         self.update_category_buttons()
 
+    @property
+    def player_levels(self):
+        return self.player_data["levels"]
+
+    @property
+    def player_cars(self):
+        return self.player_data["cars"]
+
+    @property
+    def player_cars_names(self):
+        return list(self.player_data["cars"].keys())
+
+    @property
+    def player_levels_names(self):
+        return list(self.player_data["levels"].keys())
+
     def next_level(self):
-        self.chosen_level_index = min(len(self.levels_names) - 1, self.chosen_level_index + 1)
+        self.shown_level_index = min(len(self.levels_names) - 1, self.shown_level_index + 1)
         self.update_category_buttons()
 
     def previous_level(self):
-        self.chosen_level_index = max(0, self.chosen_level_index - 1)
+        self.shown_level_index = max(0, self.shown_level_index - 1)
         self.update_category_buttons()
 
     def play(self):
         self.running = True
-        self.loaded_level = Level(level=self.levels_names[self.chosen_level_index],
-                                  vehicle=self.car_names[self.chosen_car_index],
+        self.loaded_level = Level(level=self.levels_names[self.shown_level_index],
+                                  vehicle=self.car_names[self.shown_car_index],
                                   menu=self)
         while self.running:
             self.loaded_level.update()
@@ -251,7 +271,7 @@ class MainMenu:
     def choose_vehicle(self):
         self.active_screen = self.vehicle_screen
 
-    def choose_level(self):
+    def choose_level_screen(self):
         self.active_screen = self.level_screen
 
     def customize_vehicle(self):
@@ -297,27 +317,53 @@ class MainMenu:
 
     def update_category_buttons(self):
 
-        if self.chosen_level_index == 0:
+        if self.shown_level_index == 0:
             self.level_screen[0].hidden = True
         else:
             self.level_screen[0].hidden = False
-        if self.chosen_level_index == len(self.levels_names) - 1:
+        if self.shown_level_index == len(self.levels_names) - 1:
             self.level_screen[1].hidden = True
         else:
             self.level_screen[1].hidden = False
 
-        if self.chosen_car_index == 0:
+        if self.shown_car_index == 0:
             self.vehicle_screen[0].hidden = True
         else:
             self.vehicle_screen[0].hidden = False
-        if self.chosen_car_index == len(self.car_names) - 1:
+        if self.shown_car_index == len(self.car_names) - 1:
             self.vehicle_screen[1].hidden = True
         else:
             self.vehicle_screen[1].hidden = False
         image = load_image(
-            self.levels[self.levels_names[self.chosen_level_index]]["preview"])
-        self.level_screen[-1].set_content(self.levels_names[self.chosen_level_index])
-        self.vehicle_screen[-1].set_content(self.car_names[self.chosen_car_index])
+            self.levels[self.levels_names[self.shown_level_index]]["preview"])
+
+        level_name = self.levels_names[self.shown_level_index]
+        if level_name in self.player_levels_names:
+            self.level_screen[-1].onClick = self.choose_level
+            self.level_screen[-1].set_content(level_name)
+        else:
+            self.level_screen[-1].onClick = self.buy_level
+            self.level_screen[-1].set_content(f"{level_name} - {self.levels[level_name]['price']}")
+
+        car_name = self.car_names[self.shown_car_index]
+        if car_name in self.player_cars:
+            self.vehicle_screen[-1].onClick = self.choose_car
+            self.vehicle_screen[-1].set_content(car_name)
+        else:
+            self.vehicle_screen[-1].onClick = self.buy_car
+            self.vehicle_screen[-1].set_content(f"{car_name} - {self.cars[car_name]['price']}")
+
+    def buy_car(self):
+        print(self.car_names[self.shown_car_index])
+
+    def choose_car(self):
+        self.choosen_car_index = self.shown_car_index
+
+    def choose_level(self):
+        self.chosen_level_index = self.shown_level_index
+
+    def buy_level(self):
+        print(self.levels_names[self.shown_level_index])
 
 
 def checkCollision(sprite1, sprite2):
@@ -428,7 +474,7 @@ class Wheel:
         )
         self.wheel_joint_left = physical_world.CreateJoint(torsoCarJointDef)
         self.wheel_image = pygame.transform.scale(image,
-                                                  (int(46 * wheel_size), int(46 * wheel_size)))
+                                                  (int(wheel_size * PPM) * 2, int(PPM * wheel_size) * 2))
         self.wheel_loc_center = self.wheel_image.get_width() // 2, self.wheel_image.get_height() // 2
 
         self.sprite = pygame.sprite.Sprite(sprite_group)
@@ -960,19 +1006,19 @@ class Level:
             if level not in LEVELS_DATA:
                 raise ValueError("Can't find level in json file")
             level_parameters = LEVELS_DATA[level]
-            self.PHYSICAL_WORLD = world(gravity=(0, level_parameters["GRAVITY"]))
-            self.MAX_ANGLE = level_parameters["MAX_ANGLE"]
+            self.PHYSICAL_WORLD = world(gravity=(0, level_parameters["gravity"]))
+            self.MAX_ANGLE = level_parameters["max_angle"]
             self.BACKGROUND_COLOR = level_parameters["background"]
             self.LINE_COLOR = level_parameters["line-color"]
             colors["l"] = self.LINE_COLOR
             self.GROUND_COLOR = level_parameters["ground-color"]
             colors["t"] = self.GROUND_COLOR
             self.LEVEL_ENTITIES = []
-            if "LEVEL_ENTITIES" in level_parameters:
-                self.LEVEL_ENTITIES_DATA = level_parameters["LEVEL_ENTITIES"]
+            if "level_entities" in level_parameters:
+                self.LEVEL_ENTITIES_DATA = level_parameters["level_entities"]
                 self.LEVEL_ENTITIES = {x: load_image(self.LEVEL_ENTITIES_DATA[x]["path"]) for x in
                                        self.LEVEL_ENTITIES_DATA}
-            self.LEVEL_ENTITIES_FREQUENCY = level_parameters["LEVEL_ENTITIES_FREQUENCY"]
+            self.LEVEL_ENTITIES_FREQUENCY = level_parameters["level_entities_frequency"]
 
             self.RANDOM_SEED = level_parameters["seed"]
 
