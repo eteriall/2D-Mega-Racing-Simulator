@@ -268,7 +268,7 @@ class MainMenu:
             userData="next"
         )
         self.vehicle_screen = [left_button, right_button,
-                               CategoryButton((557, 158), (806, 613), "Quadrocycle",
+                               CategoryButton((557, 158), (806, 613), "Jeep",
                                               onClick=self.choose_car)]
 
         self.tuning_screen = [CategoryButton((262, 237), (318, 500), "Upgrade", lambda x: print("Hi")),
@@ -294,7 +294,7 @@ class MainMenu:
             userData="next"
         )
         self.level_screen = [left_button, right_button,
-                             CategoryButton((413, 151), (1093, 613), "Hills", self.choose_level)]
+                             CategoryButton((413, 151), (1093, 613), "Countryside", self.choose_level)]
         self.active_screen = self.level_screen
 
         self.levels = self.get_levels()
@@ -311,6 +311,9 @@ class MainMenu:
         self.shown_car_index = 0
         self.shown_level_index = 0
         self.update_category_buttons()
+
+        self.running = False
+        self.loaded_level = None
 
     def load_player_data(self):
         with open("player_data.json") as f:
@@ -361,7 +364,6 @@ class MainMenu:
         self.update_category_buttons()
 
     def play(self, source=None):
-        print(self.shown_level_index, self.chosen_level_index, self.shown_car_index, self.choosen_car_index)
         self.running = True
         self.loaded_level = Level(level=self.chosen_level_name,
                                   vehicle=self.chosen_car_name,
@@ -423,12 +425,23 @@ class MainMenu:
         return levels
 
     def load_upgrades(self, car_name):
-        with open("cars_settings.json") as f:
-            upgrades = json.load(f)[car_name]["upgrades"]
+        car_data = self.get_cars()[self.chosen_car_name]
+        with open("player_data.json") as f:
+            upgrades = json.load(f)["cars"][car_name]
         for category_button, upgrade_name in zip(self.tuning_screen, list(upgrades.keys())):
+            upgrade_data = car_data["upgrades"][upgrade_name]
+            max_level = upgrade_data["levels"]
+            current_level = self.player_data["cars"][self.chosen_car_name][upgrade_name]
+            if max_level != current_level:
+                start_price = upgrade_data["start_price"]
+                price_multiplier = upgrade_data["price_multiplier"]
+                price = int(start_price * current_level * price_multiplier)
+            else:
+                price = "MAX LVL"
             category_button.set_content(backText=upgrade_name, fontSizeBack=48,
-                                        text="Upgrade", onClick=self.upgrade,
+                                        text=str(price), onClick=self.upgrade,
                                         userData=upgrade_name)
+
         """for
             with open("player_data.json") as f:
                 upgrades = json.load(f)["cars"][car_name]"""
@@ -436,7 +449,32 @@ class MainMenu:
         pass
 
     def upgrade(self, source):
-        print(source.userData)
+        car = self.chosen_car_name
+        upgrade_value = source.userData
+
+        current_level = self.player_data["cars"][car][upgrade_value]
+        car_data = self.get_cars()[car]
+
+        upgrade_data = car_data["upgrades"][upgrade_value]
+        max_level = upgrade_data["levels"]
+        start_price = upgrade_data["start_price"]
+        price_multiplier = upgrade_data["price_multiplier"]
+        price = start_price * current_level * price_multiplier
+        if current_level < max_level and self.player_data["money"] >= price:
+            self.player_data["money"] = int(self.player_data["money"] - price)
+            self.player_data["cars"][car][upgrade_value] += 1
+        self.save_player_data()
+        self.load_upgrades(self.chosen_car_name)
+
+        """one_part = (upgrade_data["max_value"] - car_data["parameters"][upgrade_value]) / upgrade_data["levels"]"""
+
+        """
+        "start_price": 10000,
+        "price_multiplier": 1.5,
+        "max_value": 30,
+        "levels": 5
+        """
+        print()
 
     def update_category_buttons(self):
 
@@ -478,29 +516,23 @@ class MainMenu:
             self.vehicle_screen[-1].set_content(f"{car_name} - {self.cars[car_name]['price']}$",
                                                 backText="LOCKED")
 
+    def choose_car(self, source=None):
+        self.choosen_car_index = self.shown_car_index
+        self.choose_tuning_screen()
+
+    def choose_level(self, source=None):
+        self.chosen_level_index = self.shown_level_index
+        self.choose_vehicle_screen()
+
     def buy_car(self, source=None):
         car_name = self.car_names[self.shown_car_index]
         car_data = self.get_cars()[car_name]
         price = car_data["price"]
         if price <= self.player_data["money"]:
             self.player_data["money"] = int(self.player_data["money"] - price)
-            self.player_data["cars"][car_name] = {}
+            self.player_data["cars"][car_name] = {k: 1 for k in list(car_data["upgrades"].keys())}
             self.save_player_data()
             self.update_category_buttons()
-
-    def save_player_data(self):
-        with open("player_data.json", mode="w") as f:
-            json.dump(self.player_data, f)
-
-    def choose_car(self, source=None):
-        self.choosen_car_index = self.shown_car_index
-        self.active_screen = self.tuning_screen
-        self.load_upgrades(self.chosen_car_name)
-
-    def choose_level(self, source=None):
-        self.chosen_level_index = self.shown_level_index
-        print(self.chosen_level_index)
-        self.active_screen = self.vehicle_screen
 
     def buy_level(self, source=None):
         level_name = self.levels_names[self.shown_level_index]
@@ -511,6 +543,10 @@ class MainMenu:
             self.player_data["levels"][level_name] = {"record": 0, "next_stage": level_data["stage_step"]}
             self.save_player_data()
             self.update_category_buttons()
+
+    def save_player_data(self):
+        with open("player_data.json", mode="w") as f:
+            json.dump(self.player_data, f)
 
 
 class Wheel:
