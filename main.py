@@ -15,13 +15,98 @@ from pygame.rect import Rect
 from pygame.sprite import Sprite
 from pygame_widgets import Button as BrokenButton
 
+from HillClimbRacing.hollow import textOutline
+
 pygame.init()
 pygame.mixer.init()
-PPM = 20
+PPM = 23
 TARGET_FPS = 120
 TIME_STEP = 1.0 / TARGET_FPS
 SCREEN_WIDTH, SCREEN_HEIGHT = 1880, 1000
 DEBUG = False
+
+
+def checkCollision(sprite1, sprite2):
+    return pygame.sprite.collide_rect(sprite1, sprite2)
+
+
+def invert(*args):
+    return list(map(lambda x: (x[0], SCREEN_HEIGHT - x[1]), args))
+
+
+def rotate_image(image, pos, originPos, angle):
+    w, h = image.get_size()
+    box = [pygame.math.Vector2(p) for p in [(0, 0), (w, 0), (w, -h), (0, -h)]]
+    box_rotate = [p.rotate(angle) for p in box]
+    min_box = (min(box_rotate, key=lambda p: p[0])[0], min(box_rotate, key=lambda p: p[1])[1])
+    max_box = (max(box_rotate, key=lambda p: p[0])[0], max(box_rotate, key=lambda p: p[1])[1])
+    pivot = pygame.math.Vector2(originPos[0], -originPos[1])
+    pivot_rotate = pivot.rotate(angle)
+    pivot_move = pivot_rotate - pivot
+    origin = (pos[0] - originPos[0] + min_box[0] - pivot_move[0], pos[1] - originPos[1] - max_box[1] + pivot_move[1])
+    rotated_image = pygame.transform.rotate(image, angle)
+    return rotated_image, origin
+
+
+def load_image(name, size=None):
+    fullname = os.path.join(r'C:\Users\d1520\Desktop\LyceumPygameProject\HillClimbRacing/sprites', name)
+    if not os.path.isfile(fullname):
+        print(f"Файл с изображением '{fullname}' не найден")
+        sys.exit()
+    image = pygame.image.load(fullname)
+    if size is not None:
+        image = pygame.transform.scale(image, size)
+    return image
+
+
+def my_draw_polygon(poly, body, fixture):
+    if not DEBUG and body.userData in ("left_wheel", "right_wheel", "car_body", "border"):
+        return
+    vertices = [(body.transform * v) * PPM for v in poly.vertices]
+    vertices = [(v[0], SCREEN_HEIGHT - v[1]) for v in vertices]
+    vertices = [camera.apply_coords(x) for x in vertices]
+
+    try:
+        """pygame.draw.polygon(screen, colors[body.userData], vertices, 1)"""
+        gfxdraw.filled_polygon(screen, vertices, colors[body.userData])
+        if body.userData == "t":
+            xy1, xy2 = vertices[1:3]
+            x1, y1, x2, y2 = list(map(int, xy1 + xy2))
+            pygame.gfxdraw.aapolygon(screen, ((x1, y1), (x2, y2), (x2, y2)), colors["l"])
+            pygame.draw.line(screen, colors["l"], (x1, y1), (x2, y2), 10)
+    except KeyError:
+        gfxdraw.filled_polygon(screen, vertices, (255, 0, 255))
+
+
+def my_draw_circle(circle, body, fixture):
+    if not DEBUG and body.userData in ("left_wheel", "right_wheel", "left", "right"):
+        return
+    position = body.transform * circle.pos * PPM
+    position = (position[0], SCREEN_HEIGHT - position[1])
+    position = list(map(int, camera.apply_coords(position)))
+
+    try:
+        gfxdraw.aacircle(screen, *position, int(circle.radius * PPM), colors[body.userData])
+        gfxdraw.filled_circle(screen, *position, int(circle.radius * PPM), colors[body.userData])
+    except KeyError:
+        try:
+            gfxdraw.aacircle(screen, *position, int(circle.radius * PPM), (255, 0, 255))
+        except OverflowError:
+            pygame.draw.circle(screen, (255, 0, 255), position, int(circle.radius * PPM), 2)
+
+
+def rotate_around_point(xy, degrees, origin=(0, 0)):
+    radians = math.radians(degrees)
+    x, y = xy
+    offset_x, offset_y = origin
+    adjusted_x = (x - offset_x)
+    adjusted_y = (y - offset_y)
+    cos_rad = math.cos(radians)
+    sin_rad = math.sin(radians)
+    qx = offset_x + cos_rad * adjusted_x + sin_rad * adjusted_y
+    qy = offset_y + -sin_rad * adjusted_x + cos_rad * adjusted_y
+
+    return qx, qy
 
 
 class Button(BrokenButton):
@@ -210,8 +295,8 @@ class MainMenu:
         self.chosen_level_index = 0
         self.choosen_car_index = 0
 
-        self.shown_car_index = 1
-        self.shown_level_index = 3
+        self.shown_car_index = 0
+        self.shown_level_index = 0
         self.update_category_buttons()
 
     def load_player_data(self):
@@ -259,7 +344,7 @@ class MainMenu:
     def play(self):
         self.running = True
         self.loaded_level = Level(level=self.levels_names[self.shown_level_index],
-                                  vehicle=self.car_names[self.shown_car_index],
+                                  vehicle=self.car_names[self.choosen_car_index],
                                   menu=self)
         while self.running:
             self.loaded_level.update()
@@ -297,7 +382,7 @@ class MainMenu:
         self.play_button.listen(events)
         self.play_button.draw()
 
-        self.text = self.font.render(str(self.player_data["money"]), True, (255, 255, 255))
+        self.text = self.font.render('{0:,}'.format((self.player_data["money"])).replace(",", ".") + "$", True, (255, 255, 255))
         surface.blit(self.text, (1561, 84))
 
         for elem in self.active_screen:
@@ -343,7 +428,7 @@ class MainMenu:
             self.level_screen[-1].set_content(level_name)
         else:
             self.level_screen[-1].onClick = self.buy_level
-            self.level_screen[-1].set_content(f"{level_name} - {self.levels[level_name]['price']}")
+            self.level_screen[-1].set_content(f"{level_name} - {self.levels[level_name]['price']}$")
 
         car_name = self.car_names[self.shown_car_index]
         if car_name in self.player_cars:
@@ -351,102 +436,41 @@ class MainMenu:
             self.vehicle_screen[-1].set_content(car_name)
         else:
             self.vehicle_screen[-1].onClick = self.buy_car
-            self.vehicle_screen[-1].set_content(f"{car_name} - {self.cars[car_name]['price']}")
+            self.vehicle_screen[-1].set_content(f"{car_name} - {self.cars[car_name]['price']}$")
 
     def buy_car(self):
-        print(self.car_names[self.shown_car_index])
+        car_name = self.car_names[self.shown_car_index]
+        car_data = self.get_cars()[car_name]
+        price = car_data["price"]
+        if price <= self.player_data["money"]:
+            self.player_data["money"] = int(self.player_data["money"] - price)
+            self.player_data["cars"][car_name] = {}
+            self.save_player_data()
+            self.update_category_buttons()
+
+    def save_player_data(self):
+        with open("player_data.json", mode="w") as f:
+            print(self.player_data)
+            json.dump(self.player_data, f)
 
     def choose_car(self):
         self.choosen_car_index = self.shown_car_index
+        self.active_screen = self.tuning_screen
 
     def choose_level(self):
         self.chosen_level_index = self.shown_level_index
+        self.active_screen = self.vehicle_screen
 
     def buy_level(self):
-        print(self.levels_names[self.shown_level_index])
-
-
-def checkCollision(sprite1, sprite2):
-    return pygame.sprite.collide_rect(sprite1, sprite2)
-
-
-def invert(*args):
-    return list(map(lambda x: (x[0], SCREEN_HEIGHT - x[1]), args))
-
-
-def rotate_image(image, pos, originPos, angle):
-    w, h = image.get_size()
-    box = [pygame.math.Vector2(p) for p in [(0, 0), (w, 0), (w, -h), (0, -h)]]
-    box_rotate = [p.rotate(angle) for p in box]
-    min_box = (min(box_rotate, key=lambda p: p[0])[0], min(box_rotate, key=lambda p: p[1])[1])
-    max_box = (max(box_rotate, key=lambda p: p[0])[0], max(box_rotate, key=lambda p: p[1])[1])
-    pivot = pygame.math.Vector2(originPos[0], -originPos[1])
-    pivot_rotate = pivot.rotate(angle)
-    pivot_move = pivot_rotate - pivot
-    origin = (pos[0] - originPos[0] + min_box[0] - pivot_move[0], pos[1] - originPos[1] - max_box[1] + pivot_move[1])
-    rotated_image = pygame.transform.rotate(image, angle)
-    return rotated_image, origin
-
-
-def load_image(name, size=None):
-    fullname = os.path.join(r'C:\Users\d1520\Desktop\LyceumPygameProject\HillClimbRacing/sprites', name)
-    if not os.path.isfile(fullname):
-        print(f"Файл с изображением '{fullname}' не найден")
-        sys.exit()
-    image = pygame.image.load(fullname)
-    if size is not None:
-        image = pygame.transform.scale(image, size)
-    return image
-
-
-def my_draw_polygon(poly, body, fixture):
-    if not DEBUG and body.userData in ("left_wheel", "right_wheel", "car_body", "border"):
-        return
-    vertices = [(body.transform * v) * PPM for v in poly.vertices]
-    vertices = [(v[0], SCREEN_HEIGHT - v[1]) for v in vertices]
-    vertices = [camera.apply_coords(x) for x in vertices]
-
-    try:
-        """pygame.draw.polygon(screen, colors[body.userData], vertices, 1)"""
-        gfxdraw.filled_polygon(screen, vertices, colors[body.userData])
-        if body.userData == "t":
-            xy1, xy2 = vertices[1:3]
-            x1, y1, x2, y2 = list(map(int, xy1 + xy2))
-            pygame.gfxdraw.aapolygon(screen, ((x1, y1), (x2, y2), (x2, y2)), colors["l"])
-            pygame.draw.line(screen, colors["l"], (x1, y1), (x2, y2), 10)
-    except KeyError:
-        gfxdraw.filled_polygon(screen, vertices, (255, 0, 255))
-
-
-def my_draw_circle(circle, body, fixture):
-    if not DEBUG and body.userData in ("left_wheel", "right_wheel", "left", "right"):
-        return
-    position = body.transform * circle.pos * PPM
-    position = (position[0], SCREEN_HEIGHT - position[1])
-    position = list(map(int, camera.apply_coords(position)))
-
-    try:
-        gfxdraw.aacircle(screen, *position, int(circle.radius * PPM), colors[body.userData])
-        gfxdraw.filled_circle(screen, *position, int(circle.radius * PPM), colors[body.userData])
-    except KeyError:
-        try:
-            gfxdraw.aacircle(screen, *position, int(circle.radius * PPM), (255, 0, 255))
-        except OverflowError:
-            pygame.draw.circle(screen, (255, 0, 255), position, int(circle.radius * PPM), 2)
-
-
-def rotate_around_point(xy, degrees, origin=(0, 0)):
-    radians = math.radians(degrees)
-    x, y = xy
-    offset_x, offset_y = origin
-    adjusted_x = (x - offset_x)
-    adjusted_y = (y - offset_y)
-    cos_rad = math.cos(radians)
-    sin_rad = math.sin(radians)
-    qx = offset_x + cos_rad * adjusted_x + sin_rad * adjusted_y
-    qy = offset_y + -sin_rad * adjusted_x + cos_rad * adjusted_y
-
-    return qx, qy
+        level_name = self.levels_names[self.shown_level_index]
+        level_data = self.get_levels()[level_name]
+        price = level_data["price"]
+        if price <= self.player_data["money"]:
+            self.player_data["money"] -= int(self.player_data["money"] - price)
+            self.player_data["levels"][level_name] = {"record": 0, "next_stage": level_data["stage_step"]}
+            self.save_player_data()
+            print("completed")
+            self.update_category_buttons()
 
 
 class Wheel:
@@ -950,7 +974,7 @@ class Car:
         if self.takeoff_time != -1 and time.time() - self.takeoff_time > 2:
             # Длинный прыжок
             menu.loaded_level.display_message(f"Long jump! {round(time.time() - self.takeoff_time, 1)}", 5)
-            self.LEVEL.level_money += round(time.time() - self.takeoff_time, 1) * 1000
+            self.LEVEL.level_money += int(round(time.time() - self.takeoff_time, 1) * 1000)
 
         if "left_wheel" in (data_a, data_b):
             self.left_wheel_is_grounded = True
@@ -996,7 +1020,7 @@ class Level:
 
         # Подгружаем параметры уровня из json
         self.VEHICLE_CODE = vehicle
-        self.LEVEL_CODE = vehicle
+        self.LEVEL_CODE = level
         self.menu = menu
         self.level_money = 0
         self.exit_level_timer = None
@@ -1010,10 +1034,18 @@ class Level:
             self.MAX_ANGLE = level_parameters["max_angle"]
             self.BACKGROUND_COLOR = level_parameters["background"]
             self.LINE_COLOR = level_parameters["line-color"]
-            colors["l"] = self.LINE_COLOR
+
             self.GROUND_COLOR = level_parameters["ground-color"]
-            colors["t"] = self.GROUND_COLOR
+
+            self.level_record = self.menu.player_data["levels"][level]["record"]
+            self.next_target = self.menu.player_data["levels"][level]["next_stage"]
+            self.stage_step = self.menu.levels[level]["stage_step"]
+
             self.LEVEL_ENTITIES = []
+
+            colors["t"] = self.GROUND_COLOR
+            colors["l"] = self.LINE_COLOR
+
             if "level_entities" in level_parameters:
                 self.LEVEL_ENTITIES_DATA = level_parameters["level_entities"]
                 self.LEVEL_ENTITIES = {x: load_image(self.LEVEL_ENTITIES_DATA[x]["path"]) for x in
@@ -1039,11 +1071,13 @@ class Level:
         self.terrain.create_chunk()
         self.terrain.create_border(0)
 
+        self.next_checkpoint = self.stage_step
         self.IS_RUNNING = True
         self.IS_PAUSED = False
 
         self.last_message_display_time = 99999999999999999999999999999
         self.message_text = ""
+        self.display_message(f"Reach {self.next_target}m for additional points!", 3)
 
     @property
     def has_entities(self):
@@ -1060,8 +1094,9 @@ class Level:
     def save(self):
         with open("player_data.json") as f:
             data = json.load(f)
-            data["money"] += self.level_money
-            data["money"] = int(data["money"])
+            data["money"] = int(data["money"] + self.level_money)
+            data["levels"][self.LEVEL_CODE]["record"] = self.level_record
+            data["levels"][self.LEVEL_CODE]["next_stage"] = self.next_target
         with open("player_data.json", mode="w") as f:
             json.dump(data, f)
         self.menu.update_player_data()
@@ -1099,6 +1134,18 @@ class Level:
                 self.VEHICLE.reverse_step()
         if not self.IS_PAUSED:
             self.PHYSICAL_WORLD.Step(TIME_STEP, 10, 10)
+
+        if self.VEHICLE.longitude >= self.next_target:
+            self.next_target += self.stage_step
+            self.display_message(f"Next target - {self.next_target}m! +1000", 3)
+            self.level_money += 1000
+            self.VEHICLE.refuel()
+        if self.VEHICLE.longitude >= self.next_checkpoint:
+            self.next_checkpoint += self.stage_step
+            self.display_message(f"Checkpoint reached! Car refueled!", 3)
+            self.VEHICLE.refuel()
+        if self.VEHICLE.longitude > self.level_record:
+            self.level_record = int(self.VEHICLE.longitude)
 
         if self.VEHICLE.can_drive:
             if keys[pygame.K_r]:
@@ -1157,13 +1204,14 @@ class Level:
         screen.blit(coin_icon, (18, 197))
 
         # Distance
-        distance_text = f"{int(self.VEHICLE.longitude)}m/1830m (BEST: 1804m)"
+        distance_text = f"{int(self.VEHICLE.longitude)}m/{self.next_target}m (BEST: {self.level_record}m)"
         distance = sf_pro_font_72.render(distance_text, True,
                                          (255, 255, 255))
         screen.blit(distance, (120, 40))
 
         # Coins
-        coins_text = str(int(self.level_money + self.menu.player_data["money"]))
+        coins_text = int(self.level_money + self.menu.player_data["money"])
+        coins_text = '{0:,}'.format((coins_text)).replace(",", ".")
         coins = sf_pro_font_72.render(coins_text, True,
                                       (255, 255, 255))
         screen.blit(coins, (120, 220))
@@ -1181,6 +1229,12 @@ class Level:
         new_point = rotate_around_point(POINT, degrees, ORIGIN)
         pygame.draw.line(screen, (255, 255, 255), ORIGIN, new_point, 3)"""
 
+        if self.next_checkpoint - self.VEHICLE.longitude < 100:
+            to_fuel_text = f"{int(self.next_checkpoint - self.VEHICLE.longitude)}m to"
+            to_fuel = sf_pro_font_72.render(to_fuel_text, True,
+                                            (255, 255, 255))
+            screen.blit(to_fuel, (1606, 50))
+            screen.blit(fuel_icon, (1780, 36))
         if self.last_message_display_time >= time.time():
             message = sf_pro_font_72.render(self.message_text, True, (255, 255, 255))
             screen.blit(message, (696, 208))

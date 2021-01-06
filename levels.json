@@ -4,7 +4,7 @@
     "line-color": [172, 231, 78],
     "ground-color": [93, 74, 47],
     "seed": "hills",
-    "stage_step": 150,
+    "stage_step": 300,
     "preview": "test.png",
     "level_entities_frequency": 5,
     "gravity": -35,
@@ -16,7 +16,7 @@
     "line-color": [208, 208, 177],
     "ground-color": [244, 244, 167],
     "seed": "desert",
-    "stage_step": 150,
+    "stage_step": 300,
     "level_entities": {
       "cactus": {
         "path": "cactus.png",
@@ -35,7 +35,7 @@
     "line-color": [193, 193, 193],
     "ground-color": [144, 144, 189],
     "seed": "moon",
-    "stage_step": 150,
+    "stage_step": 300,
     "preview": "test.png",
     "level_entities": {
       "flag_rus": {
@@ -59,7 +59,7 @@
     "line-color": [202,248,255],
     "ground-color": [68,153,147],
     "seed": "christmas",
-    "stage_step": 150,
+    "stage_step": 300,
     "level_entities": {
       "tree": {
         "path": "tree.png",
