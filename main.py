@@ -16,8 +16,6 @@ from pygame.rect import Rect
 from pygame.sprite import Sprite
 from pygame_widgets import Button as BrokenButton
 
-from HillClimbRacing.hollow import textOutline
-
 pygame.init()
 pygame.mixer.init()
 PPM = 20
@@ -116,6 +114,7 @@ def rotate_around_point(xy, degrees, origin=(0, 0)):
 class Button(BrokenButton):
     def __init__(self, win, x, y, width, height, **kwargs):
         self.userData = kwargs.get('userData', None)
+        kwargs["font"] = kwargs.get('font', sf_pro_font_36)
         super(Button, self).__init__(win, x, y, width, height, **kwargs)
 
     def listen(self, events):
@@ -140,10 +139,10 @@ class CategoryButton:
     pressed = (160, 160, 160)
     textColour = (255, 255, 255)
 
-    def __init__(self, xy, wh, text, onClick, image=None):
+    def __init__(self, xy, wh, text, onClick, image=None, radius=20):
         self.size = (xy, wh)
         self.userData = ''
-
+        self.radius = radius
         x, y = xy
         w, h = wh
         self.onClick = onClick
@@ -151,8 +150,8 @@ class CategoryButton:
             screen, x, y, w, h, text='',
             inactiveColour=self.bg_color,
             pressedColour=self.bg_color,
-            radius=20,
             image=image,
+            radius=radius,
             imageVAlign="bottom"
         )
 
@@ -163,7 +162,7 @@ class CategoryButton:
             screen, x, y, w, h, text=text,
             inactiveColour=self.inactive,
             pressedColour=self.pressed,
-            radius=20,
+            radius=radius,
             textColour=self.textColour,
             onClick=onClick,
             fontSize=48,
@@ -182,7 +181,7 @@ class CategoryButton:
             pressedColour=self.bg_color,
             textColour=self.textColour,
             fontSize=fontSizeBack,
-            radius=20,
+            radius=self.radius,
             image=image
         )
 
@@ -193,7 +192,7 @@ class CategoryButton:
             screen, x, y, w, h, text=text,
             inactiveColour=self.inactive,
             pressedColour=self.pressed,
-            radius=20,
+            radius=self.radius,
             textColour=self.textColour,
             onClick=self.onClick if onClick is None else onClick,
             fontSize=fontSizeFront,
@@ -270,16 +269,7 @@ class MainMenu:
             textColour=textColour,
             userData="next"
         )
-        self.vehicle_screen = [left_button, right_button,
-                               CategoryButton((557, 158), (806, 613), "Jeep",
-                                              onClick=self.choose_car)]
-
-        self.tuning_screen = [CategoryButton((262, 237), (318, 500), "Upgrade", lambda x: print("Hi")),
-                              CategoryButton((621, 237), (318, 500), "Upgrade", lambda x: print("Hi")),
-                              CategoryButton((980, 237), (318, 500), "Upgrade", lambda x: print("Hi")),
-                              CategoryButton((1339, 237), (318, 500), "Upgrade", lambda x: print("Hi"))]
-
-        left_button = Button(
+        left_button2 = Button(
             screen, 262, 664, 100, 100, text='<',
             fontSize=48, margin=20,
             inactiveColour=inactive,
@@ -287,7 +277,7 @@ class MainMenu:
             onClick=self.next_level,
             textColour=textColour
         )
-        right_button = Button(
+        right_button2 = Button(
             screen, 1558, 664, 100, 100, text='>',
             fontSize=48, margin=20,
             inactiveColour=inactive,
@@ -296,8 +286,18 @@ class MainMenu:
             textColour=textColour,
             userData="next"
         )
-        self.level_screen = [left_button, right_button,
-                             CategoryButton((413, 151), (1093, 613), "Countryside", self.choose_level)]
+
+        self.tuning_screen = [CategoryButton((262, 237), (318, 500), "Upgrade", lambda x: print("Hi")),
+                              CategoryButton((621, 237), (318, 500), "Upgrade", lambda x: print("Hi")),
+                              CategoryButton((980, 237), (318, 500), "Upgrade", lambda x: print("Hi")),
+                              CategoryButton((1339, 237), (318, 500), "Upgrade", lambda x: print("Hi"))]
+
+        self.level_screen = [left_button2, right_button2,
+                             CategoryButton((413, 151), (1093, 613), "Countryside", self.choose_level, radius=0)]
+
+        self.vehicle_screen = [left_button, right_button,
+                               CategoryButton((557, 158), (806, 613), "Jeep",
+                                              onClick=self.choose_car, radius=0)]
         self.active_screen = self.level_screen
 
         self.levels = self.get_levels()
@@ -450,11 +450,13 @@ class MainMenu:
                 start_price = upgrade_data["start_price"]
                 price_multiplier = upgrade_data["price_multiplier"]
                 price = int(start_price * current_level * price_multiplier)
+                price = '{0:,}'.format((price)).replace(",", " ")
             else:
-                price = "MAX LVL"
-            category_button.set_content(backText=upgrade_name, fontSizeBack=48,
+                price = "Full"
+            image = load_image(f"upgrades/{upgrade_name}.png")
+            category_button.set_content(fontSizeBack=48,
                                         text=str(price), onClick=self.upgrade,
-                                        userData=upgrade_name)
+                                        userData=upgrade_name, image=image)
 
         """for
             with open("player_data.json") as f:
@@ -513,15 +515,17 @@ class MainMenu:
             self.level_screen[-1].set_content(f"{level_name} - {self.levels[level_name]['price']}$",
                                               backText="LOCKED", image=image)
 
+        image = load_image(
+            self.cars[self.car_names[self.shown_car_index]]["preview"])
         car_name = self.car_names[self.shown_car_index]
         if car_name in self.player_cars:
             self.vehicle_screen[-1].onClick = self.choose_car
-            self.vehicle_screen[-1].set_content(car_name, onClick=self.choose_car)
+            self.vehicle_screen[-1].set_content(car_name, onClick=self.choose_car, image=image)
         else:
             image.set_alpha(100)
             self.vehicle_screen[-1].onClick = self.buy_car
             self.vehicle_screen[-1].set_content(f"{car_name} - {self.cars[car_name]['price']}$",
-                                                backText="LOCKED")
+                                                backText="LOCKED", image=image)
 
     def choose_car(self, source=None):
         self.choosen_car_index = self.shown_car_index
@@ -1396,8 +1400,12 @@ colors = {"t": (29, 29, 29, 255),
 
 # UI
 fuel_bar_colors = load_image("UI/fuel_bar_colors.png")
-sf_pro_font_36 = pygame.font.Font(None, 36)
-sf_pro_font_72 = pygame.font.Font(None, 72)
+
+sf_pro_font_36 = pygame.font.Font(
+    r"C:\Users\d1520\Desktop\LyceumPygameProject\HillClimbRacing\SFProDisplay-Regular.ttf", 48)
+sf_pro_font_72 = pygame.font.Font(
+    None, 72)
+
 speedometer_bg = load_image("UI/speedometer.png")
 coin_icon = load_image("UI/coin_icon.png")
 fuel_icon = load_image("UI/fuel_icon.png")
@@ -1410,7 +1418,7 @@ clock = pygame.time.Clock()
 pygame.time.set_timer(pygame.USEREVENT + 2, 200)
 
 checkpoint_image = pygame.surface.Surface((30, SCREEN_HEIGHT))
-checkpoint_image.fill((237, 255, 198))
+checkpoint_image.fill((222, 79, 79))
 checkpoint_image.set_alpha(100)
 
 menu = MainMenu()
