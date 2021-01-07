@@ -5,7 +5,7 @@
     "ground-color": [93, 74, 47],
     "seed": "hills",
     "stage_step": 300,
-    "preview": "test.png",
+    "preview": "previews/countryside.png",
     "level_entities_frequency": 5,
     "gravity": -35,
     "max_angle": 30,
@@ -25,7 +25,7 @@
       }
     },
     "level_entities_frequency": 3,
-    "preview": "test.png",
+    "preview": "previews/desert.png",
     "gravity": -35,
     "max_angle": 10,
     "price": 35000
@@ -36,7 +36,7 @@
     "ground-color": [144, 144, 189],
     "seed": "moon",
     "stage_step": 300,
-    "preview": "test.png",
+    "preview": "previews/moon.png",
     "level_entities": {
       "flag_rus": {
         "path": "flag_rus.png",
@@ -45,6 +45,11 @@
       },
       "flag_usa": {
         "path": "flag_usa.png",
+        "align": "bottomleft",
+        "delta_y": 10
+      },
+      "flag_china": {
+        "path": "flag_china.png",
         "align": "bottomleft",
         "delta_y": 10
       }
@@ -72,7 +77,7 @@
         "delta_y": 1
       }
     },
-    "preview": "test.png",
+    "preview": "previews/north_pole.png",
     "gravity": -35,
     "max_angle": 20,
     "level_entities_frequency": 5,

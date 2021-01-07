@@ -20,10 +20,10 @@ from HillClimbRacing.hollow import textOutline
 
 pygame.init()
 pygame.mixer.init()
-PPM = 23
+PPM = 20
 TARGET_FPS = 120
 TIME_STEP = 1.0 / TARGET_FPS
-SCREEN_WIDTH, SCREEN_HEIGHT = 1880, 1000
+SCREEN_WIDTH, SCREEN_HEIGHT = 1920, 1080
 DEBUG = False
 
 
@@ -69,12 +69,15 @@ def my_draw_polygon(poly, body, fixture):
 
     try:
         """pygame.draw.polygon(screen, colors[body.userData], vertices, 1)"""
-        gfxdraw.filled_polygon(screen, vertices, colors[body.userData])
-        if body.userData == "t":
-            xy1, xy2 = vertices[1:3]
-            x1, y1, x2, y2 = list(map(int, xy1 + xy2))
-            pygame.gfxdraw.aapolygon(screen, ((x1, y1), (x2, y2), (x2, y2)), colors["l"])
-            pygame.draw.line(screen, colors["l"], (x1, y1), (x2, y2), 10)
+        if not DEBUG:
+            gfxdraw.filled_polygon(screen, vertices, colors[body.userData])
+            if body.userData == "t":
+                xy1, xy2 = vertices[1:3]
+                x1, y1, x2, y2 = list(map(int, xy1 + xy2))
+                pygame.gfxdraw.aapolygon(screen, ((x1, y1), (x2, y2), (x2, y2)), colors["l"])
+                pygame.draw.line(screen, colors["l"], (x1, y1), (x2, y2), 10)
+        else:
+            gfxdraw.aapolygon(screen, vertices, colors[body.userData])
     except KeyError:
         gfxdraw.filled_polygon(screen, vertices, (255, 0, 255))
 
@@ -132,7 +135,7 @@ class Button(BrokenButton):
 
 
 class CategoryButton:
-    bg_color = (77, 77, 77)
+    bg_color = (0, 0, 0)
     inactive = (100, 100, 100)
     pressed = (160, 160, 160)
     textColour = (255, 255, 255)
@@ -367,11 +370,9 @@ class MainMenu:
         upgrade_values = self.player_data["cars"][self.chosen_car_name]
         car_data = self.get_cars()[self.chosen_car_name]
         for parameter, level in upgrade_values.items():
-            print(parameter, level)
             upgrade_data = car_data["upgrades"][parameter]
             one_part = (upgrade_data["max_value"] - car_data["parameters"][parameter]) / upgrade_data["levels"]
             upgrade_values[parameter] = level * one_part + car_data["parameters"][parameter]
-        print(upgrade_values)
         return upgrade_values
 
     def play(self, source=None):
@@ -498,23 +499,26 @@ class MainMenu:
             self.vehicle_screen[1].hidden = True
         else:
             self.vehicle_screen[1].hidden = False
+
         image = load_image(
             self.levels[self.levels_names[self.shown_level_index]]["preview"])
 
         level_name = self.levels_names[self.shown_level_index]
         if level_name in self.player_levels_names:
             self.level_screen[-1].onClick = self.choose_level
-            self.level_screen[-1].set_content(level_name, onClick=self.choose_level)
+            self.level_screen[-1].set_content(level_name, onClick=self.choose_level, image=image)
         else:
+            image.set_alpha(100)
             self.level_screen[-1].onClick = self.buy_level
             self.level_screen[-1].set_content(f"{level_name} - {self.levels[level_name]['price']}$",
-                                              backText="LOCKED")
+                                              backText="LOCKED", image=image)
 
         car_name = self.car_names[self.shown_car_index]
         if car_name in self.player_cars:
             self.vehicle_screen[-1].onClick = self.choose_car
             self.vehicle_screen[-1].set_content(car_name, onClick=self.choose_car)
         else:
+            image.set_alpha(100)
             self.vehicle_screen[-1].onClick = self.buy_car
             self.vehicle_screen[-1].set_content(f"{car_name} - {self.cars[car_name]['price']}$",
                                                 backText="LOCKED")
@@ -724,6 +728,7 @@ class Terrain:
         return False
 
     def draw_entities(self, surface):
+        """self.entities_sprite_group.draw(surface)"""
         for sprite in self.entities_sprite_group:
             surface.blit(sprite.image, self.level.camera.apply(sprite))
 
@@ -757,7 +762,7 @@ class Terrain:
 
 
 class Camera:
-    delta_y = -500
+    delta_y = -100
 
     def __init__(self, width, height):
         self.state = pygame.Rect(0, 0, width, height)
@@ -774,11 +779,11 @@ class Camera:
             self.restrictions.h = endy
 
     def apply(self, target):
-        return target.rect.move(self.state.left, self.state.top)
+        return target.rect.move(self.state.left, self.state.top + self.delta_y)
 
     def apply_coords(self, coords):
         x, y = coords
-        return x + self.state.x, y + self.state.top
+        return x + self.state.x, y + self.state.top + self.delta_y
 
     def update_xy(self, coords):
         self.state = self.coords_func(coords)
@@ -945,6 +950,10 @@ class Car:
     def longitude(self):
         return self.main_body.position.x
 
+    @property
+    def position(self):
+        return self.main_body.position
+
     def refuel(self):
         self.fuel = self.MAX_FUEL
 
@@ -969,12 +978,15 @@ class Car:
                 wheel.wheel_body.angularVelocity += self.ACCELERATION
 
     def release(self):
-        idle_brake_speed = 0.1
+        idle_brake_speed = 0.2
         for wheel in self.WHEELS:
-            """if wheel.angularVelocity > 0:
-                wheel -= idle_brake_speed
-            if wheel.angularVelocity < 0:
-                wheel += idle_brake_speed"""
+            try:
+                if wheel.angularVelocity > 0:
+                    wheel -= idle_brake_speed
+                if wheel.angularVelocity < 0:
+                    wheel += idle_brake_speed
+            except AttributeError:
+                continue
 
     def update(self, events):
         for event in events:
@@ -1157,9 +1169,40 @@ class Level:
         self.terrain.create_border(0)
 
         self.next_checkpoint = self.stage_step
-        self.IS_RUNNING = True
-        self.IS_PAUSED = False
+        self.is_paused = False
 
+        inactive = (100, 100, 100)
+        pressed = (160, 160, 160)
+        textColour = (255, 255, 255)
+        self.pause_menu_screen = [Button(
+            screen, 1233, 611, 580, 120, text="Resume",
+            inactiveColour=inactive,
+            pressedColour=pressed,
+            radius=20,
+            textColour=textColour,
+            onClick=lambda x: self.pause(),
+            fontSize=48,
+        ),
+            Button(
+                screen, 1233, 767, 580, 120, text="Menu",
+                inactiveColour=inactive,
+                pressedColour=pressed,
+                radius=20,
+                textColour=textColour,
+                onClick=lambda x: self.exit(),
+                fontSize=48,
+            ),
+
+            Button(
+                screen, 1233, 923, 580, 120, text="Exit",
+                inactiveColour=inactive,
+                pressedColour=pressed,
+                radius=20,
+                textColour=textColour,
+                onClick=lambda x: sys.exit(),
+                fontSize=48,
+            )
+        ]
         self.last_message_display_time = 99999999999999999999999999999
         self.message_text = ""
         self.display_message(f"Reach {self.next_target}m for additional points!", 3)
@@ -1175,6 +1218,9 @@ class Level:
         if (pygame.time.get_ticks() - self.exit_level_timer) / 1000 > 5:
             self.save()
             menu.running = False
+
+    def pause(self):
+        self.is_paused = not self.is_paused
 
     def save(self):
         with open("player_data.json") as f:
@@ -1193,9 +1239,13 @@ class Level:
         self.terrain = Terrain(self)
         self.terrain.create_chunk()
         self.terrain.create_border(0)
-
+        self.next_checkpoint = self.stage_step
         self.camera.set_new_restrictions(startx=0)
         self.VEHICLE = Car(self.VEHICLE_CODE, self, modifications=self.modifications)
+
+    def exit(self):
+        self.save()
+        self.menu.running = False
 
     def update(self):
         global camera
@@ -1204,7 +1254,6 @@ class Level:
         screen.fill(self.BACKGROUND_COLOR)
         self.terrain.draw_entities(screen)
 
-        btns = pygame.mouse.get_pressed(3)
         keys = pygame.key.get_pressed()
 
         events = pygame.event.get()
@@ -1213,13 +1262,12 @@ class Level:
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                self.save()
-                self.menu.running = False
+                self.is_paused = not self.is_paused
             if event.type == pygame.USEREVENT + 1 and self.VEHICLE.reversing_time:
                 self.VEHICLE.reverse_step()
-        if not self.IS_PAUSED:
-            self.PHYSICAL_WORLD.Step(TIME_STEP, 10, 10)
-
+        if self.next_checkpoint - self.VEHICLE.longitude < 80:
+            screen.blit(checkpoint_image, camera.apply_coords(
+                invert((self.next_checkpoint * PPM, self.VEHICLE.position[1] * PPM + SCREEN_HEIGHT // 2))[0]))
         if self.VEHICLE.longitude >= self.next_target:
             self.next_target += self.stage_step
             self.display_message(f"Next target - {self.next_target}m! +1000", 3)
@@ -1256,12 +1304,21 @@ class Level:
             camera.set_new_restrictions(startx=self.terrain.first_chunk_pos.x * PPM)
 
         self.VEHICLE.update(events)
-        self.camera.update_xy(self.VEHICLE.main_body.position * PPM)
 
         for sprite in self.VEHICLE.sprite_group:
             screen.blit(sprite.image, self.camera.apply(sprite))
 
-        self.draw_ui()
+        if not self.is_paused:
+            self.PHYSICAL_WORLD.Step(TIME_STEP, 10, 10)
+            self.draw_ui()
+            self.camera.update_xy(self.VEHICLE.position * PPM)
+        else:
+            pos = self.VEHICLE.position * PPM
+            pos = (pos[0] + 400, pos[1])
+            for elem in self.pause_menu_screen:
+                elem.listen(events)
+                elem.draw()
+            self.camera.update_xy(pos)
         pygame.display.flip()
         clock.tick(TARGET_FPS)
 
@@ -1301,7 +1358,7 @@ class Level:
                                       (255, 255, 255))
         screen.blit(coins, (120, 220))
 
-        """# Speedometer
+        # Speedometer
         screen.blit(speedometer_bg, (35, 770))
         speed = sf_pro_font_36.render(str(abs(round(self.VEHICLE.speed, 2))), True,
                                       (255, 255, 255))
@@ -1312,7 +1369,7 @@ class Level:
         ORIGIN = (166, 900)
         POINT = (ORIGIN[0] - LENGTH, 900)
         new_point = rotate_around_point(POINT, degrees, ORIGIN)
-        pygame.draw.line(screen, (255, 255, 255), ORIGIN, new_point, 3)"""
+        pygame.draw.line(screen, (255, 255, 255), ORIGIN, new_point, 3)
 
         if self.next_checkpoint - self.VEHICLE.longitude < 100:
             to_fuel_text = f"{int(self.next_checkpoint - self.VEHICLE.longitude)}m to"
@@ -1347,10 +1404,14 @@ fuel_icon = load_image("UI/fuel_icon.png")
 filled_fuel = load_image("UI/filled_fuel.png")
 fuel_rect = load_image("UI/fuel_rect.png")
 double_arrow = load_image("UI/double_arrow.png")
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
 pygame.display.set_caption("Hill climb racing")
 clock = pygame.time.Clock()
 pygame.time.set_timer(pygame.USEREVENT + 2, 200)
+
+checkpoint_image = pygame.surface.Surface((30, SCREEN_HEIGHT))
+checkpoint_image.fill((237, 255, 198))
+checkpoint_image.set_alpha(100)
 
 menu = MainMenu()
 while True:
