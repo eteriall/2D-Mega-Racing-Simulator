@@ -3,6 +3,7 @@
     "background": [144, 228, 255],
     "line-color": [172, 231, 78],
     "ground-color": [93, 74, 47],
+    "ground-texture": "ground/terrain-ground.png",
     "seed": "hills",
     "stage_step": 300,
     "preview": "previews/countryside.png",
@@ -15,6 +16,7 @@
     "background": [148, 211, 233],
     "line-color": [208, 208, 177],
     "ground-color": [244, 244, 167],
+    "ground-texture": "ground/desert-ground.png",
     "seed": "desert",
     "stage_step": 300,
     "level_entities": {
@@ -34,6 +36,7 @@
     "background": [3, 13, 50],
     "line-color": [193, 193, 193],
     "ground-color": [144, 144, 189],
+    "ground-texture": "ground/moon-ground.png",
     "seed": "moon",
     "stage_step": 300,
     "preview": "previews/moon.png",
@@ -63,6 +66,7 @@
     "background": [3,6,12],
     "line-color": [202,248,255],
     "ground-color": [68,153,147],
+    "ground-texture": "ground/moon-ground.png",
     "seed": "christmas",
     "stage_step": 300,
     "level_entities": {
