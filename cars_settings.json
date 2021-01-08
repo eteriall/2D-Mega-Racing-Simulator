@@ -300,7 +300,7 @@
   },
   "Tank": {
     "price": 200000,
-    "preview": "previews/race_car_preview.png",
+    "preview": "previews/tank_preview.png",
     "parameters": {
       "MAX_FUEL": 100,
       "MAX_CAR_SPEED": 20,
@@ -366,7 +366,7 @@
     },
     "sprites": {
       "body": "cars/tank.png",
-      "wheel": "wheels/car-tank-tire.png"
+      "wheel": "wheels/bike-tire.png"
     },
     "upgrades": {
       "MAX_CAR_SPEED": {

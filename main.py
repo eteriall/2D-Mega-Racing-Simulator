@@ -5,8 +5,8 @@ import os
 import random
 import sys
 import time
-import pygame
 from pygame import gfxdraw
+import pygame
 
 import collision
 import pygame
@@ -24,16 +24,16 @@ TIME_STEP = 1.0 / TARGET_FPS
 SCREEN_WIDTH, SCREEN_HEIGHT = 1920, 1080
 DEBUG = False
 
-
-def checkCollision(sprite1, sprite2):
-    return pygame.sprite.collide_rect(sprite1, sprite2)
+DELTAX, DELTAY = 0, 0
 
 
 def invert(*args):
+    """Инвертируем список коррдинат по y"""
     return list(map(lambda x: (x[0], SCREEN_HEIGHT - x[1]), args))
 
 
 def rotate_image(image, pos, originPos, angle):
+    """Вращение картинки"""
     w, h = image.get_size()
     box = [pygame.math.Vector2(p) for p in [(0, 0), (w, 0), (w, -h), (0, -h)]]
     box_rotate = [p.rotate(angle) for p in box]
@@ -47,37 +47,53 @@ def rotate_image(image, pos, originPos, angle):
     return rotated_image, origin
 
 
-def load_image(name, size=None):
-    fullname = os.path.join(r'C:\Users\d1520\Desktop\LyceumPygameProject\HillClimbRacing/sprites', name)
+def load_image(name, colorkey=None, size=None):
+    fullname = os.path.join('sprites', name)
+    # если файл не существует, то выходим
     if not os.path.isfile(fullname):
         print(f"Файл с изображением '{fullname}' не найден")
         sys.exit()
     image = pygame.image.load(fullname)
     if size is not None:
         image = pygame.transform.scale(image, size)
+    if colorkey is not None:
+        image = image.convert()
+        if colorkey == -1:
+            colorkey = image.get_at((0, 0))
+        image.set_colorkey(colorkey)
+    else:
+        image = image.convert_alpha()
     return image
 
 
 def my_draw_polygon(poly, body, fixture):
+    global DELTAY, DELTAX
+    """Функция отрисовки тел"""
     if not DEBUG and body.userData in ("left_wheel", "right_wheel", "car_body", "border"):
         return
+
     vertices = [(body.transform * v) * PPM for v in poly.vertices]
     vertices = [(v[0], SCREEN_HEIGHT - v[1]) for v in vertices]
     vertices = [camera.apply_coords(x) for x in vertices]
+    vertices = list(map(lambda x: (int(x[0]), int(x[1])), vertices))
 
-    try:
-        """pygame.draw.polygon(screen, colors[body.userData], vertices, 1)"""
-        if not DEBUG:
-            gfxdraw.filled_polygon(screen, vertices, colors[body.userData])
+    if not DEBUG:
+        # Отрисовка залитого тела
+        try:
             if body.userData == "t":
-                xy1, xy2 = vertices[1:3]
-                x1, y1, x2, y2 = list(map(int, xy1 + xy2))
+                pygame.gfxdraw.textured_polygon(screen, vertices, GROUND_TEXTURE, -int(DELTAX) % 512, -int(DELTAY) % 512)
+                x1, y1, x2, y2 = list(map(int, vertices[1] + vertices[2]))
                 pygame.gfxdraw.aapolygon(screen, ((x1, y1), (x2, y2), (x2, y2)), colors["l"])
                 pygame.draw.line(screen, colors["l"], (x1, y1), (x2, y2), 10)
-        else:
+            else:
+                pygame.gfxdraw.filled_polygon(screen, vertices, colors[body.userData])
+        except Exception as e:
+            pass
+    else:
+        try:
             gfxdraw.aapolygon(screen, vertices, colors[body.userData])
-    except KeyError:
-        gfxdraw.filled_polygon(screen, vertices, (255, 0, 255))
+        except KeyError:
+            gfxdraw.filled_polygon(screen, vertices, (255, 0, 255))
 
 
 def my_draw_circle(circle, body, fixture):
@@ -91,10 +107,11 @@ def my_draw_circle(circle, body, fixture):
         gfxdraw.aacircle(screen, *position, int(circle.radius * PPM), colors[body.userData])
         gfxdraw.filled_circle(screen, *position, int(circle.radius * PPM), colors[body.userData])
     except KeyError:
-        try:
-            gfxdraw.aacircle(screen, *position, int(circle.radius * PPM), (255, 0, 255))
-        except OverflowError:
-            pygame.draw.circle(screen, (255, 0, 255), position, int(circle.radius * PPM), 2)
+        if DEBUG:
+            try:
+                gfxdraw.aacircle(screen, *position, int(circle.radius * PPM), (255, 0, 255))
+            except OverflowError:
+                pygame.draw.circle(screen, (255, 0, 255), position, int(circle.radius * PPM), 2)
 
 
 def rotate_around_point(xy, degrees, origin=(0, 0)):
@@ -766,7 +783,7 @@ class Terrain:
 
 
 class Camera:
-    delta_y = -100
+    delta_y = 0
 
     def __init__(self, width, height):
         self.state = pygame.Rect(0, 0, width, height)
@@ -790,15 +807,15 @@ class Camera:
         return x + self.state.x, y + self.state.top + self.delta_y
 
     def update_xy(self, coords):
+        global DELTAX, DELTAY
         self.state = self.coords_func(coords)
+        DELTAX, DELTAY = -self.state.x, self.state.y
 
     def coords_func(self, target_coords):
         l, t, = target_coords
         _, _, w, h = self.state
         l, t = -l + SCREEN_WIDTH / 2, t - SCREEN_HEIGHT / 2 + 100
         l = min(-self.restrictions.x, l)  # Не движемся дальше левой границы
-
-        """l = max(-(self.state.width - SCREEN_WIDTH), l)  # Не движемся дальше правой границы"""
         return Rect(l, t, w, h)
 
 
@@ -1116,7 +1133,7 @@ class Car:
 
 class Level:
     def __init__(self, level=None, vehicle=None, menu=None, vehicle_modifications=None):
-        global LINE_COLOR, colors
+        global LINE_COLOR, colors, GROUND_TEXTURE
 
         self.modifications = vehicle_modifications
         # Подгружаем параметры уровня из json
@@ -1131,6 +1148,7 @@ class Level:
             if level not in LEVELS_DATA:
                 raise ValueError("Can't find level in json file")
             level_parameters = LEVELS_DATA[level]
+            GROUND_TEXTURE = load_image(level_parameters["ground-texture"])
             self.PHYSICAL_WORLD = world(gravity=(0, level_parameters["gravity"]))
             self.MAX_ANGLE = level_parameters["max_angle"]
             self.BACKGROUND_COLOR = level_parameters["background"]
@@ -1254,32 +1272,29 @@ class Level:
     def update(self):
         global camera
 
-        camera = self.camera
         screen.fill(self.BACKGROUND_COLOR)
-        self.terrain.draw_entities(screen)
-
+        camera = self.camera
         keys = pygame.key.get_pressed()
-
         events = pygame.event.get()
+
         for event in events:
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 self.is_paused = not self.is_paused
-            if event.type == pygame.USEREVENT + 1 and self.VEHICLE.reversing_time:
-                self.VEHICLE.reverse_step()
+
         if self.next_checkpoint - self.VEHICLE.longitude < 80:
-            screen.blit(checkpoint_image, camera.apply_coords(
-                invert((self.next_checkpoint * PPM, self.VEHICLE.position[1] * PPM + SCREEN_HEIGHT // 2))[0]))
+            checkpoint_coords = camera.apply_coords((self.next_checkpoint * PPM, 0))[0], 0
+            screen.blit(checkpoint_image, checkpoint_coords)
+        if self.VEHICLE.longitude >= self.next_checkpoint:
+            self.next_checkpoint += self.stage_step
+            self.display_message(f"Checkpoint reached! Car refueled!", 3)
+            self.VEHICLE.refuel()
         if self.VEHICLE.longitude >= self.next_target:
             self.next_target += self.stage_step
             self.display_message(f"Next target - {self.next_target}m! +1000", 3)
             self.level_money += 1000
-            self.VEHICLE.refuel()
-        if self.VEHICLE.longitude >= self.next_checkpoint:
-            self.next_checkpoint += self.stage_step
-            self.display_message(f"Checkpoint reached! Car refueled!", 3)
             self.VEHICLE.refuel()
         if self.VEHICLE.longitude > self.level_record:
             self.level_record = int(self.VEHICLE.longitude)
@@ -1298,6 +1313,8 @@ class Level:
         else:
             self.VEHICLE.release()
             self.exit_level()
+
+        self.terrain.draw_entities(screen)
 
         for body in self.PHYSICAL_WORLD.bodies:
             for fixture in body.fixtures:
@@ -1363,17 +1380,17 @@ class Level:
         screen.blit(coins, (120, 220))
 
         # Speedometer
-        screen.blit(speedometer_bg, (35, 770))
-        speed = sf_pro_font_36.render(str(abs(round(self.VEHICLE.speed, 2))), True,
+        """screen.blit(speedometer_bg, (35, 770))
+        speed = sf_pro_font_24.render(str(abs(round(self.VEHICLE.speed, 2))), True,
                                       (255, 255, 255))
-        screen.blit(speed, (139, 985))
+        screen.blit(speed, (139, 985))"""
         MAX_SPEED = 90
         degrees = -int(min(self.VEHICLE.speed, MAX_SPEED) / MAX_SPEED * 260 - 40)
         LENGTH = 120
         ORIGIN = (166, 900)
         POINT = (ORIGIN[0] - LENGTH, 900)
         new_point = rotate_around_point(POINT, degrees, ORIGIN)
-        pygame.draw.line(screen, (255, 255, 255), ORIGIN, new_point, 3)
+        """pygame.draw.line(screen, (255, 255, 255), ORIGIN, new_point, 3)"""
 
         if self.next_checkpoint - self.VEHICLE.longitude < 100:
             to_fuel_text = f"{int(self.next_checkpoint - self.VEHICLE.longitude)}m to"
@@ -1390,6 +1407,11 @@ class Level:
         self.message_text = text
 
 
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
+pygame.display.set_caption("Hill climb racing")
+clock = pygame.time.Clock()
+pygame.time.set_timer(pygame.USEREVENT + 2, 200)
+
 polygonShape.update = my_draw_polygon
 circleShape.update = my_draw_circle
 colors = {"t": (29, 29, 29, 255),
@@ -1400,7 +1422,9 @@ colors = {"t": (29, 29, 29, 255),
 
 # UI
 fuel_bar_colors = load_image("UI/fuel_bar_colors.png")
-
+GROUND_TEXTURE = load_image("ground/terrain-ground.png")
+sf_pro_font_24 = pygame.font.Font(
+    r"C:\Users\d1520\Desktop\LyceumPygameProject\HillClimbRacing\SFProDisplay-Regular.ttf", 23)
 sf_pro_font_36 = pygame.font.Font(
     r"C:\Users\d1520\Desktop\LyceumPygameProject\HillClimbRacing\SFProDisplay-Regular.ttf", 48)
 sf_pro_font_72 = pygame.font.Font(
@@ -1412,10 +1436,6 @@ fuel_icon = load_image("UI/fuel_icon.png")
 filled_fuel = load_image("UI/filled_fuel.png")
 fuel_rect = load_image("UI/fuel_rect.png")
 double_arrow = load_image("UI/double_arrow.png")
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
-pygame.display.set_caption("Hill climb racing")
-clock = pygame.time.Clock()
-pygame.time.set_timer(pygame.USEREVENT + 2, 200)
 
 checkpoint_image = pygame.surface.Surface((30, SCREEN_HEIGHT))
 checkpoint_image.fill((222, 79, 79))
