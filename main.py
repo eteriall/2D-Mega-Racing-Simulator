@@ -16,15 +16,28 @@ from pygame.rect import Rect
 from pygame.sprite import Sprite
 from pygame_widgets import Button as BrokenButton
 
+from test import compute_bezier_points
+
 pygame.init()
 pygame.mixer.init()
-PPM = 20
-TARGET_FPS = 120
+PPM = 23
+TARGET_FPS = 100
 TIME_STEP = 1.0 / TARGET_FPS
 SCREEN_WIDTH, SCREEN_HEIGHT = 1920, 1080
 DEBUG = False
-
 DELTAX, DELTAY = 0, 0
+
+
+def shake():
+    s = -1
+    for _ in range(0, 5):
+        for x in range(0, 30, 5):
+            yield (0, (x / 10 * s))
+        for x in range(30, 0, -5):
+            yield (0, x / 10 * s)
+        s *= -1
+    while True:
+        yield (0, 0)
 
 
 def invert(*args):
@@ -84,7 +97,7 @@ def my_draw_polygon(poly, body, fixture):
                 pygame.gfxdraw.textured_polygon(screen, vertices, GROUND_TEXTURE, -int(DELTAX) % 512,
                                                 -int(DELTAY) % 512)
                 x1, y1, x2, y2 = list(map(int, vertices[1] + vertices[2]))
-                pygame.gfxdraw.aapolygon(screen, ((x1, y1), (x2, y2), (x2, y2)), colors["l"])
+                """pygame.gfxdraw.aapolygon(screen, ((x1, y1), (x2, y2), (x2, y2 + 50), (x1, y1 + 50)), (255, 0, 0))"""
                 pygame.draw.line(screen, colors["l"], (x1, y1), (x2, y2), 10)
             else:
                 pygame.gfxdraw.filled_polygon(screen, vertices, colors[body.userData])
@@ -443,7 +456,7 @@ class MainMenu:
                                      (255, 255, 255))
         surface.blit(self.text, (1561, 84))
 
-        alpha_value = max(0, 255 - ((int(round(time.time() * 1000)) - self.start_time) / 2))
+        alpha_value = max(0, 255 - ((int(round(time.time() * 1000)) - self.start_time)))
 
         for elem in self.active_screen:
             elem.listen(events)
@@ -796,6 +809,8 @@ class Terrain:
 
 class Camera:
     delta_y = 0
+    delta_x = 0
+    offset = shake()
 
     def __init__(self, width, height):
         self.state = pygame.Rect(0, 0, width, height)
@@ -812,16 +827,16 @@ class Camera:
             self.restrictions.h = endy
 
     def apply(self, target):
-        return target.rect.move(self.state.left, self.state.top + self.delta_y)
+        return target.rect.move(self.state.left + self.delta_x, self.state.top + self.delta_y)
 
     def apply_coords(self, coords):
         x, y = coords
-        return x + self.state.x, y + self.state.top + self.delta_y
+        return x + self.state.x + self.delta_x, y + self.state.top + self.delta_y
 
     def update_xy(self, coords):
         global DELTAX, DELTAY
         self.state = self.coords_func(coords)
-        DELTAX, DELTAY = -self.state.x, self.state.y
+        DELTAX, DELTAY = -self.state.x - self.delta_x, self.state.y + self.delta_y
 
     def coords_func(self, target_coords):
         l, t, = target_coords
@@ -933,10 +948,7 @@ class Car:
 
         # Физическое положени автомобиля
         self.car_flips_n = 0
-        self.is_grounded = False
         self.takeoff_time = -1
-        self.left_wheel_is_grounded = False
-        self.right_wheel_is_grounded = False
 
         # Инициализация спрайта корпуса автомобиля
         self.BODY_SPRITE = pygame.sprite.Sprite(self.sprite_group)
@@ -960,7 +972,9 @@ class Car:
             "WHEEL_POSITION": [1.6, 2.4]
         """
 
-        self.WHEELS = []
+        self.wheel_grounding = {}
+        self.wheels = []
+        self.flipped_frame_counter = 0
         for wheel_name in self.WHEELS_DATA:
             wheel_data = self.WHEELS_DATA[wheel_name]
             wheel_density = wheel_data["WHEEL_DENSITY"]
@@ -973,11 +987,24 @@ class Car:
                               wheel_friction=self.CAR_FRICTION,
                               sprite_group=self.sprite_group,
                               name=wheel_name)
-            self.WHEELS.append(new_wheel)
+            self.wheel_grounding[wheel_name] = False
+            self.wheels.append(new_wheel)
+
+    @property
+    def is_grounded(self):
+        return any(self.wheel_grounding.values())
 
     @property
     def speed(self):
-        return abs(self.main_body.linearVelocity.x) + abs(self.main_body.linearVelocity.y)
+        return round(abs(self.main_body.linearVelocity.x) + abs(self.main_body.linearVelocity.y), 2)
+
+    @property
+    def rpm(self):
+        rpm = 0
+        for wheel in self.wheels:
+            rpm += abs(wheel.angularVelocity)
+        rpm /= len(self.wheels)
+        return rpm
 
     @property
     def longitude(self):
@@ -992,7 +1019,7 @@ class Car:
 
     @property
     def can_drive(self):
-        return self.fuel > 0
+        return self.fuel > 0 and not self.flipped_frame_counter > 100
 
     def tilt_left(self):
         self.main_body.angularVelocity += self.ROTATION_SPEED / 10
@@ -1001,18 +1028,18 @@ class Car:
         self.main_body.angularVelocity -= self.ROTATION_SPEED / 10
 
     def move(self):
-        for wheel in self.WHEELS:
+        for wheel in self.wheels:
             if wheel.wheel_body.angularVelocity > -self.MAX_CAR_SPEED:
                 wheel.wheel_body.angularVelocity -= self.ACCELERATION
 
     def brake(self):
-        for wheel in self.WHEELS:
+        for wheel in self.wheels:
             if wheel.wheel_body.angularVelocity < self.MAX_CAR_SPEED:
                 wheel.wheel_body.angularVelocity += self.ACCELERATION
 
     def release(self):
         idle_brake_speed = 0.2
-        for wheel in self.WHEELS:
+        for wheel in self.wheels:
             try:
                 if wheel.angularVelocity > 0:
                     wheel -= idle_brake_speed
@@ -1033,7 +1060,7 @@ class Car:
         self.BODY_SPRITE.image, self.BODY_SPRITE.rect.topleft = rotate_image(self.car_body_image,
                                                                              car_body_center, car_body_image_center,
                                                                              self.main_body.angle * 180.0 / 3.14)
-        for wheel in self.WHEELS:
+        for wheel in self.wheels:
             wheel.update()
 
         rotation_angle = math.degrees(self.main_body.angle)
@@ -1047,6 +1074,11 @@ class Car:
             self.car_flips_n -= 1
             menu.loaded_level.display_message("Frontflip! +1000", 5)
             self.LEVEL.level_money += 1000
+
+        if not self.is_grounded and self.speed == 0:
+            self.flipped_frame_counter += 1
+        else:
+            self.flipped_frame_counter = 0
 
         # Time reverse
         if self.reversing_time:
@@ -1091,50 +1123,46 @@ class Car:
     def BeginContact(self, contact):
         """Обработка начала коллизии"""
 
-        varible_names = ("left_wheel", "right_wheel")
+        wheels_names = set(self.wheel_grounding.keys())
         fixture_a = contact.fixtureA
         fixture_b = contact.fixtureB
         body_a, body_b = fixture_a.body, fixture_b.body
         data_a, data_b = body_a.userData, body_b.userData
 
         # Связано ли касание с нашим авто?
-        if data_a not in varible_names and data_b not in varible_names:
+        if data_a not in wheels_names and data_b not in wheels_names:
             return
         if self.takeoff_time != -1 and time.time() - self.takeoff_time > 2:
             # Длинный прыжок
             menu.loaded_level.display_message(f"Long jump! {round(time.time() - self.takeoff_time, 1)}", 5)
             self.LEVEL.level_money += int(round(time.time() - self.takeoff_time, 1) * 1000)
 
-        if "left_wheel" in (data_a, data_b):
-            self.left_wheel_is_grounded = True
-            self.takeoff_time = -1
-        if "right_wheel" in (data_a, data_b):
-            self.right_wheel_is_grounded = True
-            self.takeoff_time = -1
-        if "car_body" in (data_a, data_b):
-            self.is_grounded = True
-            self.takeoff_time = -1
+        if data_a in wheels_names:
+            self.wheel_grounding[data_a] = True
+        if data_b in wheels_names:
+            self.wheel_grounding[data_b] = True
 
     def EndContact(self, contact):
         """Обработка конца коллизии"""
-        varible_fixtures_names = ("left_wheel", "right_wheel")
+
+        wheels_names = ("left_wheel", "right_wheel")
         fixture_a = contact.fixtureA
         fixture_b = contact.fixtureB
         body_a, body_b = fixture_a.body, fixture_b.body
         data_a, data_b = body_a.userData, body_b.userData
 
         # Связано ли касание с нашим авто?
-        if data_a not in varible_fixtures_names and data_b not in varible_fixtures_names:
+        if data_a not in wheels_names and data_b not in wheels_names:
             return
 
-        if "left_wheel" in (data_a, data_b):
-            self.left_wheel_is_grounded = False
-        if "right_wheel" in (data_a, data_b):
-            self.right_wheel_is_grounded = False
+        if data_a in wheels_names:
+            self.wheel_grounding[data_a] = False
+        if data_b in wheels_names:
+            self.wheel_grounding[data_b] = False
 
-        if not self.left_wheel_is_grounded and not self.right_wheel_is_grounded:
+        if not self.is_grounded:
             self.takeoff_time = time.time()
-            self.is_grounded = False
+
 
     def distance_to(self, point, count_y=True):
         """Расчёт расстояния между автотобилем и точкой"""
@@ -1167,21 +1195,21 @@ class Level:
             self.LINE_COLOR = level_parameters["line-color"]
 
             self.GROUND_COLOR = level_parameters["ground-color"]
-
+            self.BACKGROUND_TEXTURE = load_image(level_parameters["bg-texture"])
             self.level_record = self.menu.player_levels[level]["record"]
-            self.next_target = self.menu.player_levels[level]["next_stage"]
-            self.stage_step = self.menu.levels[level]["stage_step"]
+            self.next_target = self.menu.player_levels[level]["next-stage"]
+            self.stage_step = self.menu.levels[level]["stage-step"]
 
             self.LEVEL_ENTITIES = []
 
             colors["t"] = self.GROUND_COLOR
             colors["l"] = self.LINE_COLOR
 
-            if "level_entities" in level_parameters:
-                self.LEVEL_ENTITIES_DATA = level_parameters["level_entities"]
+            if "level-entities" in level_parameters:
+                self.LEVEL_ENTITIES_DATA = level_parameters["level-entities"]
                 self.LEVEL_ENTITIES = {x: load_image(self.LEVEL_ENTITIES_DATA[x]["path"]) for x in
                                        self.LEVEL_ENTITIES_DATA}
-            self.LEVEL_ENTITIES_FREQUENCY = level_parameters["level_entities_frequency"]
+            self.LEVEL_ENTITIES_FREQUENCY = level_parameters["level-entities-frequency"]
 
             self.RANDOM_SEED = level_parameters["seed"]
 
@@ -1249,7 +1277,10 @@ class Level:
     def exit_level(self):
         if self.exit_level_timer is None:
             self.exit_level_timer = pygame.time.get_ticks()
-        self.display_message("Fuel ended!", 100)
+        if self.VEHICLE.fuel == 0:
+            self.display_message("Fuel ended!", 100)
+        else:
+            self.display_message("Flipped!", 100)
         if (pygame.time.get_ticks() - self.exit_level_timer) / 1000 > 5:
             self.save()
             menu.running = False
@@ -1286,6 +1317,13 @@ class Level:
         global camera
 
         screen.fill(self.BACKGROUND_COLOR)
+        try:
+            pygame.gfxdraw.textured_polygon(screen, ((0, 0), (SCREEN_WIDTH, 0),
+                                                     (SCREEN_WIDTH, SCREEN_HEIGHT),
+                                                     (0, SCREEN_HEIGHT)), self.BACKGROUND_TEXTURE, 0,
+                                            0)
+        except:
+            pass
         camera = self.camera
         keys = pygame.key.get_pressed()
         events = pygame.event.get()
@@ -1296,10 +1334,19 @@ class Level:
                 sys.exit()
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 self.is_paused = not self.is_paused
-
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_e:
+                camera.offset = shake()
+        camera.delta_x, camera.delta_y = next(camera.offset)
         if self.next_checkpoint - self.VEHICLE.longitude < 80:
             checkpoint_coords = camera.apply_coords((self.next_checkpoint * PPM, 0))[0], 0
-            screen.blit(checkpoint_image, checkpoint_coords)
+            cx, cy = checkpoint_coords
+            try:
+                pygame.gfxdraw.textured_polygon(screen, ((cx, 0), (cx + 30, 0),
+                                                         (cx + 30, SCREEN_HEIGHT),
+                                                         (cx, SCREEN_HEIGHT)), checkpoint_tile, -int(DELTAX) % 30,
+                                                -int(DELTAY) % 40)
+            except:
+                pass
         if self.VEHICLE.longitude >= self.next_checkpoint:
             self.next_checkpoint += self.stage_step
             self.display_message(f"Checkpoint reached! Car refueled!", 3)
@@ -1401,17 +1448,29 @@ class Level:
         screen.blit(coins, (120, 220))
 
         # Speedometer
-        """screen.blit(speedometer_bg, (35, 770))
-        speed = sf_pro_font_24.render(str(abs(round(self.VEHICLE.speed, 2))), True,
-                                      (255, 255, 255))
-        screen.blit(speed, (139, 985))"""
+        screen.blit(speedometer_bg, (704, 800))
+        screen.blit(taxometer_bg, (960, 800))
+
         MAX_SPEED = 90
-        degrees = -int(min(self.VEHICLE.speed, MAX_SPEED) / MAX_SPEED * 260 - 40)
-        LENGTH = 120
-        ORIGIN = (166, 900)
+        MAX_RPM = 90
+        degrees1 = -int(min(self.VEHICLE.speed, MAX_SPEED) / MAX_SPEED * 266 - 133)
+        degrees2 = -int(min(self.VEHICLE.rpm, MAX_RPM) / MAX_RPM * 266 - 133)
+        poiner_origin_point = 16, 104
+        global_pointer_pos1 = 832, 931
+        global_pointer_pos2 = 1087, 931
+
+        """
+        LENGTH = 90
+        ORIGIN = (832, 927)
         POINT = (ORIGIN[0] - LENGTH, 900)
         new_point = rotate_around_point(POINT, degrees, ORIGIN)
-        """pygame.draw.line(screen, (255, 255, 255), ORIGIN, new_point, 3)"""
+        pygame.draw.line(screen, (145, 37, 38), ORIGIN, new_point, 5)
+        """
+
+        pointer1, new_origin1 = rotate_image(speedometer_pointer, global_pointer_pos1, poiner_origin_point, degrees1)
+        pointer2, new_origin2 = rotate_image(speedometer_pointer, global_pointer_pos2, poiner_origin_point, degrees2)
+        screen.blit(pointer1, new_origin1)
+        screen.blit(pointer2, new_origin2)
 
         if self.next_checkpoint - self.VEHICLE.longitude < 100:
             to_fuel_text = f"{int(self.next_checkpoint - self.VEHICLE.longitude)}m to"
@@ -1443,24 +1502,24 @@ colors = {"t": (29, 29, 29, 255),
 
 # UI
 fuel_bar_colors = load_image("UI/fuel_bar_colors.png")
-GROUND_TEXTURE = load_image("ground/terrain-ground.png")
-sf_pro_font_24 = pygame.font.Font(
-    r"C:\Users\d1520\Desktop\LyceumPygameProject\HillClimbRacing\SFProDisplay-Regular.ttf", 23)
+GROUND_TEXTURE = load_image("ground/terrain_ground.png")
+
 sf_pro_font_36 = pygame.font.Font(
     r"C:\Users\d1520\Desktop\LyceumPygameProject\HillClimbRacing\SFProDisplay-Regular.ttf", 48)
 sf_pro_font_72 = pygame.font.Font(
     None, 72)
 
-speedometer_bg = load_image("UI/speedometer.png")
+speedometer_bg = load_image("UI/speedometer_bg.png")
+taxometer_bg = load_image("UI/taxometer_bg.png")
+speedometer_pointer = load_image("UI/speedometer_pointer.png")
 coin_icon = load_image("UI/coin_icon.png")
 fuel_icon = load_image("UI/fuel_icon.png")
 filled_fuel = load_image("UI/filled_fuel.png")
 fuel_rect = load_image("UI/fuel_rect.png")
 double_arrow = load_image("UI/double_arrow.png")
 
-checkpoint_image = pygame.surface.Surface((30, SCREEN_HEIGHT))
-checkpoint_image.fill((222, 79, 79))
-checkpoint_image.set_alpha(100)
+checkpoint_tile = load_image("checkpoint.png")
+checkpoint_tile.set_alpha(100)
 
 menu = MainMenu()
 while True:
