@@ -81,7 +81,8 @@ def my_draw_polygon(poly, body, fixture):
         # Отрисовка залитого тела
         try:
             if body.userData == "t":
-                pygame.gfxdraw.textured_polygon(screen, vertices, GROUND_TEXTURE, -int(DELTAX) % 512, -int(DELTAY) % 512)
+                pygame.gfxdraw.textured_polygon(screen, vertices, GROUND_TEXTURE, -int(DELTAX) % 512,
+                                                -int(DELTAY) % 512)
                 x1, y1, x2, y2 = list(map(int, vertices[1] + vertices[2]))
                 pygame.gfxdraw.aapolygon(screen, ((x1, y1), (x2, y2), (x2, y2)), colors["l"])
                 pygame.draw.line(screen, colors["l"], (x1, y1), (x2, y2), 10)
@@ -334,6 +335,7 @@ class MainMenu:
 
         self.running = False
         self.loaded_level = None
+        self.start_time = int(round(time.time() * 1000))
 
     def load_player_data(self):
         with open("player_data.json") as f:
@@ -401,6 +403,7 @@ class MainMenu:
                                   vehicle_modifications=modifications)
         while self.running:
             self.loaded_level.update()
+        self.start_time = int(round(time.time() * 1000))
 
     def update_player_data(self):
         with open("player_data.json") as f:
@@ -440,9 +443,18 @@ class MainMenu:
                                      (255, 255, 255))
         surface.blit(self.text, (1561, 84))
 
+        alpha_value = max(0, 255 - ((int(round(time.time() * 1000)) - self.start_time) / 2))
+
         for elem in self.active_screen:
             elem.listen(events)
             elem.draw()
+
+        if alpha_value:
+            pygame.gfxdraw.filled_polygon(screen,
+                                          (
+                                              (0, 0), (SCREEN_WIDTH, 0), (SCREEN_WIDTH, SCREEN_HEIGHT),
+                                              (0, SCREEN_HEIGHT)),
+                                          (0, 0, 0, alpha_value))
         pygame.display.flip()
 
     def get_cars(self):
@@ -1184,6 +1196,7 @@ class Level:
 
         # Ивент для перемотки
         pygame.time.set_timer(pygame.USEREVENT + 1, 10)
+        self.start_time = int(round(time.time() * 1000))
 
         # Создаём землю
         self.terrain = Terrain(self)
@@ -1329,6 +1342,13 @@ class Level:
         for sprite in self.VEHICLE.sprite_group:
             screen.blit(sprite.image, self.camera.apply(sprite))
 
+        alpha_value = max(0, 255 - ((int(round(time.time() * 1000)) - self.start_time) / 2))
+        if alpha_value:
+            pygame.gfxdraw.filled_polygon(screen,
+                                          (
+                                              (0, 0), (SCREEN_WIDTH, 0), (SCREEN_WIDTH, SCREEN_HEIGHT),
+                                              (0, SCREEN_HEIGHT)),
+                                          (0, 0, 0, alpha_value))
         if not self.is_paused:
             self.PHYSICAL_WORLD.Step(TIME_STEP, 10, 10)
             self.draw_ui()
@@ -1340,6 +1360,7 @@ class Level:
                 elem.listen(events)
                 elem.draw()
             self.camera.update_xy(pos)
+
         pygame.display.flip()
         clock.tick(TARGET_FPS)
 
