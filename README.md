@@ -1,4 +1,5 @@
 # 2D Mega-Racing Simulator 
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/eteriall/2D-Mega-Racing-Simulator)
 
 Гоночный 2D симулятор, написанный на Python 3.8 с использованием библиотеки pygame и Box2D для симуляции физики в 2D пространстве.
 -  [ Скриншоты из игры](https://github.com/eteriall/2D-Mega-Racing-Simulator#фотографии-из-игры)
@@ -7,7 +8,7 @@
 
 
 
-## Запуск проекта на своём устройстве
+## Установка
 Хотите поиграть? [Cкачайте последнюю версию игры](https://github.com/eteriall/2D-Mega-Racing-Simulator/releases/download/v1.1/Setup_2D_Mega-Racing_Simulator.exe)!
 
 Если вы хотите модифицировать __исходный код__ или просто посмотреть -
