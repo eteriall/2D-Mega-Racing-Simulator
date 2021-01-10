@@ -1,5 +1,5 @@
 # 2D Mega-Racing Simulator
-![screenshot1](https://github.com/eteriall/HillClimbRacing/blob/master/screenshots/screenshot1.png)
+
 ## Проект для Яндекс.Лицея - 2D Mega-Racing Simulator.
 Гоночный 2D симулятор, написанный на Python 3.8 с использованием библиотеки pygame (2.0.0) и Box2D для симуляции физики в 2D пространстве.
 
