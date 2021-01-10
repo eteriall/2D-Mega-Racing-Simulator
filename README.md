@@ -232,7 +232,7 @@
    [скачайте файл](https://github.com/eteriall/HillClimbRacing/blob/master/source/data/levels.json)
    заново.
 
-## Снимки из игры
+## Фотографии из игры
 ![screenshot0](https://github.com/eteriall/HillClimbRacing/blob/master/source/screenshots/screenshot0.png)
 
 ![screenshot1](https://github.com/eteriall/HillClimbRacing/blob/master/source/screenshots/screenshot1.png)
