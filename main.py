@@ -20,15 +20,18 @@ from test import compute_bezier_points
 
 pygame.init()
 pygame.mixer.init()
+
+"""Константы экрана и камеры"""
 PPM = 23
 TARGET_FPS = 100
 TIME_STEP = 1.0 / TARGET_FPS
 SCREEN_WIDTH, SCREEN_HEIGHT = 1920, 1080
+delta_x, delta_y = 0, 0
 DEBUG = False
-DELTAX, DELTAY = 0, 0
 
 
 def shake():
+    """Генератор значений для встряхивания камеры"""
     s = -1
     for _ in range(0, 5):
         for x in range(0, 20, 10):
@@ -41,7 +44,7 @@ def shake():
 
 
 def invert(*args):
-    """Инвертируем список коррдинат по y"""
+    """Инвертируем список координат по y"""
     return list(map(lambda x: (x[0], SCREEN_HEIGHT - x[1]), args))
 
 
@@ -61,8 +64,8 @@ def rotate_image(image, pos, originPos, angle):
 
 
 def load_image(name, colorkey=None, size=None):
+    """Загрузка картинки"""
     fullname = os.path.join('sprites', name)
-    # если файл не существует, то выходим
     if not os.path.isfile(fullname):
         print(f"Файл с изображением '{fullname}' не найден")
         sys.exit()
@@ -80,8 +83,8 @@ def load_image(name, colorkey=None, size=None):
 
 
 def my_draw_polygon(poly, body, fixture):
-    global DELTAY, DELTAX
-    """Функция отрисовки тел"""
+    global delta_y, delta_x
+    """Функция отрисовки полигональных тел"""
     if not DEBUG and body.userData in ("left_wheel", "right_wheel", "car_body", "border"):
         return
 
@@ -94,8 +97,8 @@ def my_draw_polygon(poly, body, fixture):
         # Отрисовка залитого тела
         try:
             if body.userData == "t":
-                pygame.gfxdraw.textured_polygon(screen, vertices, GROUND_TEXTURE, -int(DELTAX) % 512,
-                                                -int(DELTAY) % 512)
+                pygame.gfxdraw.textured_polygon(screen, vertices, GROUND_TEXTURE, -int(delta_x) % 512,
+                                                -int(delta_y) % 512)
                 x1, y1, x2, y2 = list(map(int, vertices[1] + vertices[2]))
                 """pygame.gfxdraw.aapolygon(screen, ((x1, y1), (x2, y2), (x2, y2 + 50), (x1, y1 + 50)), (255, 0, 0))"""
                 pygame.draw.line(screen, colors["l"], (x1, y1), (x2, y2), 10)
@@ -111,6 +114,7 @@ def my_draw_polygon(poly, body, fixture):
 
 
 def my_draw_circle(circle, body, fixture):
+    """Функция отрисовки круглых тел"""
     if not DEBUG and body.userData in ("left_wheel", "right_wheel", "left", "right"):
         return
     position = body.transform * circle.pos * PPM
@@ -129,6 +133,7 @@ def my_draw_circle(circle, body, fixture):
 
 
 def rotate_around_point(xy, degrees, origin=(0, 0)):
+    """Функция, вращающая координаты относительно origin-а"""
     radians = math.radians(degrees)
     x, y = xy
     offset_x, offset_y = origin
@@ -144,6 +149,7 @@ def rotate_around_point(xy, degrees, origin=(0, 0)):
 
 class Button(BrokenButton):
     def __init__(self, win, x, y, width, height, **kwargs):
+        """Я переписал класс кнопки из модуля pygame_widgets"""
         self.userData = kwargs.get('userData', None)
         kwargs["font"] = kwargs.get('font', sf_pro_font_36)
         super(Button, self).__init__(win, x, y, width, height, **kwargs)
@@ -171,6 +177,8 @@ class CategoryButton:
     textColour = (255, 255, 255)
 
     def __init__(self, xy, wh, text, onClick, image=None, radius=20):
+        """Кнопка с задним фоном. Используется в меню."""
+
         self.size = (xy, wh)
         self.userData = ''
         self.radius = radius
@@ -202,6 +210,7 @@ class CategoryButton:
     def set_content(self, text='', image=None, backText='',
                     fontSizeBack=200, fontSizeFront=48,
                     onClick=None, userData=None):
+        """Меняем содержимое кнопки"""
         xy, wh = self.size
         x, y = xy
         w, h = wh
@@ -231,16 +240,19 @@ class CategoryButton:
         )
 
     def draw(self):
+        """Отрисовка кнопки"""
         self.back.draw()
         self.front.draw()
 
     def listen(self, events):
+        """Прослушка событий"""
         self.front.listen(events)
 
 
 class MainMenu:
     def __init__(self):
-        self.font = pygame.font.SysFont('calibri', 36)
+        """Главное меню"""
+
         self.BACKGROUND_COLOR = (29, 29, 29)
 
         inactive = (100, 100, 100)
@@ -288,7 +300,7 @@ class MainMenu:
             fontSize=48, margin=20,
             inactiveColour=inactive,
             pressedColour=pressed, radius=20,
-            onClick=self.next_car,
+            onClick=self.swipe_car,
             textColour=textColour
         )
         right_button = Button(
@@ -296,7 +308,7 @@ class MainMenu:
             fontSize=48, margin=20,
             inactiveColour=inactive,
             pressedColour=pressed, radius=20,
-            onClick=self.next_car,
+            onClick=self.swipe_car,
             textColour=textColour,
             userData="next"
         )
@@ -305,7 +317,7 @@ class MainMenu:
             fontSize=48, margin=20,
             inactiveColour=inactive,
             pressedColour=pressed, radius=20,
-            onClick=self.next_level,
+            onClick=self.swipe_level,
             textColour=textColour
         )
         right_button2 = Button(
@@ -313,7 +325,7 @@ class MainMenu:
             fontSize=48, margin=20,
             inactiveColour=inactive,
             pressedColour=pressed, radius=20,
-            onClick=self.next_level,
+            onClick=self.swipe_level,
             textColour=textColour,
             userData="next"
         )
@@ -351,47 +363,41 @@ class MainMenu:
         self.start_time = int(round(time.time() * 1000))
 
     def load_player_data(self):
+        """Загрузка данных игрока"""
         with open("player_data.json") as f:
             data = json.load(f)
             return data
 
-    def set_active_screen(self, screen_name):
-        self.active_screen = {"car": self.vehicle_screen,
-                              "level": self.level_screen,
-                              "tuning": self.tuning_screen}[screen_name]
+    @property
+    def player_levels(self):
+        """Уровни, которые есть у игрока"""
+        return self.player_data["levels"]
 
-    def next_car(self, source=None):
+    @property
+    def player_cars(self):
+        """Транспорт, который есть у игрока"""
+        return self.player_data["cars"]
+
+    @property
+    def chosen_car_name(self):
+        """Название выбранного автомобиля"""
+        return self.car_names[self.choosen_car_index]
+
+    @property
+    def chosen_level_name(self):
+        """Название выбранного уровня"""
+        return self.levels_names[self.chosen_level_index]
+
+    def swipe_car(self, source=None):
+        """Переключение автомобиля в меню"""
         if source.userData == 'next':
             self.shown_car_index = min(len(self.car_names) - 1, self.shown_car_index + 1)
         else:
             self.shown_car_index = max(0, self.shown_car_index - 1)
         self.update_category_buttons()
 
-    @property
-    def player_levels(self):
-        return self.player_data["levels"]
-
-    @property
-    def player_cars(self):
-        return self.player_data["cars"]
-
-    @property
-    def player_cars_names(self):
-        return list(self.player_data["cars"].keys())
-
-    @property
-    def chosen_car_name(self):
-        return self.car_names[self.choosen_car_index]
-
-    @property
-    def chosen_level_name(self):
-        return self.levels_names[self.chosen_level_index]
-
-    @property
-    def player_levels_names(self):
-        return list(self.player_levels.keys())
-
-    def next_level(self, source=None):
+    def swipe_level(self, source=None):
+        """Переключение уровня в меню"""
         if source.userData == "next":
             self.shown_level_index = min(len(self.levels_names) - 1, self.shown_level_index + 1)
         else:
@@ -399,6 +405,7 @@ class MainMenu:
         self.update_category_buttons()
 
     def get_upgraded_parameters(self):
+        """Получение 'прокаченных' параметров у автомобиля"""
         upgrade_values = self.player_data["cars"][self.chosen_car_name]
         car_data = self.get_cars()[self.chosen_car_name]
         for parameter, level in upgrade_values.items():
@@ -408,6 +415,7 @@ class MainMenu:
         return upgrade_values
 
     def play(self, source=None):
+        """Запуск уровня"""
         self.running = True
         modifications = self.get_upgraded_parameters()
         self.loaded_level = Level(level=self.chosen_level_name,
@@ -419,20 +427,25 @@ class MainMenu:
         self.start_time = int(round(time.time() * 1000))
 
     def update_player_data(self):
+        """Загрузка данных игрока в переменную self.player_data"""
         with open("player_data.json") as f:
             self.player_data = json.load(f)
 
     def choose_vehicle_screen(self, source=None):
+        """Выбор экрана выбора транспорта"""
         self.active_screen = self.vehicle_screen
 
     def choose_level_screen(self, source=None):
+        """Выбор экрана выбора уровня"""
         self.active_screen = self.level_screen
 
     def choose_tuning_screen(self, source=None):
+        """Выбор экрана тюнинга автомобиля"""
         self.load_upgrades(self.chosen_car_name)
         self.active_screen = self.tuning_screen
 
     def update(self, surface):
+        """Обновление экрана главного меню"""
         events = pygame.event.get()
         surface.fill(self.BACKGROUND_COLOR)
 
@@ -452,8 +465,8 @@ class MainMenu:
         self.play_button.listen(events)
         self.play_button.draw()
 
-        self.text = self.font.render('{0:,}'.format((self.player_data["money"])).replace(",", " ") + "$", True,
-                                     (255, 255, 255))
+        self.text = sf_pro_font_36.render('{0:,}'.format((self.player_data["money"])).replace(",", " ") + "$", True,
+                                          (255, 255, 255))
         surface.blit(self.text, (1561, 84))
 
         alpha_value = max(0, 255 - ((int(round(time.time() * 1000)) - self.start_time)))
@@ -463,7 +476,7 @@ class MainMenu:
             elem.draw()
 
         if alpha_value:
-            pygame.gfxdraw.filled_polygon(screen,
+            pygame.gfxdraw.filled_polygon(surface,
                                           (
                                               (0, 0), (SCREEN_WIDTH, 0), (SCREEN_WIDTH, SCREEN_HEIGHT),
                                               (0, SCREEN_HEIGHT)),
@@ -471,16 +484,19 @@ class MainMenu:
         pygame.display.flip()
 
     def get_cars(self):
+        """Получение всех автомобилей в игре"""
         with open("cars_settings.json") as f:
             cars = json.load(f)
         return cars
 
     def get_levels(self):
+        """Получение всех уровней в игре"""
         with open("levels.json") as f:
             levels = json.load(f)
         return levels
 
     def load_upgrades(self, car_name):
+        """Подгрузка прокаченных параметров машины пользователя для обновления экрана тюнинга"""
         car_data = self.get_cars()[self.chosen_car_name]
         with open("player_data.json") as f:
             upgrades = json.load(f)["cars"][car_name]
@@ -500,13 +516,8 @@ class MainMenu:
                                         text=str(price), onClick=self.upgrade,
                                         userData=upgrade_name, image=image)
 
-        """for
-            with open("player_data.json") as f:
-                upgrades = json.load(f)["cars"][car_name]"""
-
-        pass
-
     def upgrade(self, source):
+        """Прокачка автомобиля"""
         car = self.chosen_car_name
         upgrade_value = source.userData
 
@@ -525,7 +536,7 @@ class MainMenu:
         self.load_upgrades(self.chosen_car_name)
 
     def update_category_buttons(self):
-
+        """Обновление всех значящих кнопок в меню"""
         if self.shown_level_index == 0:
             self.level_screen[0].hidden = True
         else:
@@ -548,7 +559,7 @@ class MainMenu:
             self.levels[self.levels_names[self.shown_level_index]]["preview"])
 
         level_name = self.levels_names[self.shown_level_index]
-        if level_name in self.player_levels_names:
+        if level_name in self.player_levels:
             self.level_screen[-1].onClick = self.choose_level
             self.level_screen[-1].set_content(level_name, onClick=self.choose_level, image=image)
         else:
@@ -570,14 +581,17 @@ class MainMenu:
                                                 backText="LOCKED", image=image)
 
     def choose_car(self, source=None):
+        """Выбор автомобиля"""
         self.choosen_car_index = self.shown_car_index
         self.choose_tuning_screen()
 
     def choose_level(self, source=None):
+        """Выбор уровня"""
         self.chosen_level_index = self.shown_level_index
         self.choose_vehicle_screen()
 
     def buy_car(self, source=None):
+        """Покупка автомобиля"""
         car_name = self.car_names[self.shown_car_index]
         car_data = self.get_cars()[car_name]
         price = car_data["price"]
@@ -588,6 +602,7 @@ class MainMenu:
             self.update_category_buttons()
 
     def buy_level(self, source=None):
+        """Покупка уровня"""
         level_name = self.levels_names[self.shown_level_index]
         level_data = self.get_levels()[level_name]
         price = level_data["price"]
@@ -598,6 +613,7 @@ class MainMenu:
             self.update_category_buttons()
 
     def save_player_data(self):
+        """Сохранение"""
         with open("player_data.json", mode="w") as f:
             json.dump(self.player_data, f)
 
@@ -609,6 +625,7 @@ class Wheel:
                  wheel_friction=1,
                  wheel_size=1,
                  sprite_group=None):
+        """Класс колеса автомобиля"""
         image = load_image(image)
         x, y = parent.position
         self.wheel_body = physical_world.CreateDynamicBody(
@@ -636,26 +653,32 @@ class Wheel:
 
     @property
     def angle(self):
+        """Угол вращения колеса (Rad)"""
         return self.wheel_body.angle
 
     @property
     def angularVelocity(self):
+        """Скорость вращения колеса"""
         return self.wheel_body.angularVelocity
 
     @property
     def position(self):
+        """Позиция колеса (m)"""
         return self.wheel_body.position
 
     def update(self):
+        """Обновление колеса"""
         wheel_pos = invert(self.position * PPM)[0]
         self.sprite.image, self.sprite.rect.topleft = rotate_image(self.wheel_image, wheel_pos,
                                                                    self.wheel_loc_center,
                                                                    self.angle * 180.0 / 3.14)
 
     def __sub__(self, other):
+        """Уменьшение скорости вращения"""
         self.wheel_body.angularVelocity -= other
 
     def __add__(self, other):
+        """Увеличение скорости вращения"""
         self.wheel_body.angularVelocity += other
 
 
@@ -665,10 +688,12 @@ class Terrain:
     n = 0
 
     def __init__(self, level):
+        """Класс поверхности"""
         self.PHYSICAL_WORLD = level.PHYSICAL_WORLD
         self.terrains = list()
         self.enities_chunks = list()
         self.level = level
+        self.last_world_coords = b2Vec2(0, 0)
         self.entities_sprite_group = pygame.sprite.Group()
         random.seed(level.RANDOM_SEED)
 
@@ -705,6 +730,7 @@ class Terrain:
         return chunk, entities_in_chunk
 
     def create_border(self, chunk_index=1):
+        """Создание левого края карты"""
         # Делаем левый ограничитель, чтобы юзер не выпал за край карты
         pos = self.terrains[chunk_index][0].position.x - 2, self.terrains[chunk_index][0].position.y + 40
         border = self.PHYSICAL_WORLD.CreateStaticBody(position=pos)
@@ -723,7 +749,7 @@ class Terrain:
         return self.tile_position
 
     def create_chunk_tile(self, position, angle):
-        # Создание клетки чанка
+        """Создание клетки чанка"""
         self.n += 1
         groundPieceHeight, groundPieceWidth = 80, random.randint(10, 30)
         body_def = b2BodyDef()
@@ -755,30 +781,27 @@ class Terrain:
         return body, entity
 
     def rotate_floor_tile(self, coords, angle):
-        """Вращаем прямоугольничек клетки для разнообразия рельефа"""
+        """Вращаем прямоугольник клетки для разнообразия рельефа"""
         newcoords = []
         for k in range(len(coords)):
             nc = b2Vec2(0, 0)
-            nc.x = math.cos(angle) * (coords[k].x) - math.sin(angle) * (coords[k].y)
-            nc.y = math.sin(angle) * (coords[k].x) + math.cos(angle) * (coords[k].y)
+            nc.x = math.cos(angle) * coords[k].x - math.sin(angle) * coords[k].y
+            nc.y = math.sin(angle) * coords[k].x + math.cos(angle) * coords[k].y
             newcoords.append(nc)
         return newcoords
 
-    def check_collision(self, obj2):
-        for obj1 in self.terrains:
-            try:
-                if collision.collide(obj1, obj2, response=None):
-                    return True
-            except TypeError as e:
-                print(obj1, obj2, e)
-        return False
-
     def draw_entities(self, surface):
-        """self.entities_sprite_group.draw(surface)"""
+        """Отрисовка всех статичных объектов-спрайтов сцены"""
+        """
+        self.entities_sprite_group.draw(surface) тут не подойдёт,
+         так как нам нужно менять позиции
+        спрайтов относительно сдвига камеры
+        """
         for sprite in self.entities_sprite_group:
             surface.blit(sprite.image, self.level.camera.apply(sprite))
 
     def add_entity(self, pos, angle=0):
+        """Добавление статичного объекта-спрайта на сцену"""
         angle = math.degrees(angle)
         pos = list(pos)
 
@@ -803,7 +826,6 @@ class Terrain:
             sprite.rect.midbottom = pos
             sprite.image, sprite.rect.topleft = rotate_image(entity_image, sprite.rect.midbottom,
                                                              entity_image.get_rect().midbottom, angle)
-
         return sprite
 
 
@@ -813,10 +835,12 @@ class Camera:
     offset = shake()
 
     def __init__(self, width, height):
+        """Класс камеры для 'слежки' за объектами"""
         self.state = pygame.Rect(0, 0, width, height)
         self.restrictions = pygame.Rect(0, 0, 1000, 1000)
 
     def set_new_restrictions(self, startx=None, endx=None, starty=None, endy=None):
+        """Изменение ограничений камеры"""
         if startx is not None:
             self.restrictions.x = startx
         if starty is not None:
@@ -827,58 +851,63 @@ class Camera:
             self.restrictions.h = endy
 
     def apply(self, target):
+        """Изменённые координаты левого верхнего угла спрайта относительно камеры"""
         return target.rect.move(self.state.left + self.delta_x, self.state.top + self.delta_y)
 
     def apply_coords(self, coords):
+        """Изменённые координаты относительно камеры"""
         x, y = coords
         return x + self.state.x + self.delta_x, y + self.state.top + self.delta_y
 
     def update_xy(self, coords):
-        global DELTAX, DELTAY
+        """Изменение цели камеры"""
+        global delta_x, delta_y
         self.state = self.coords_func(coords)
-        DELTAX, DELTAY = -self.state.x - self.delta_x, self.state.y + self.delta_y
+        delta_x, delta_y = -self.state.x - self.delta_x, self.state.y + self.delta_y
 
     def coords_func(self, target_coords):
+        """Ограничения камеры"""
         l, t, = target_coords
         _, _, w, h = self.state
         l, t = -l + SCREEN_WIDTH / 2, t - SCREEN_HEIGHT / 2 + 100
-        l = min(-self.restrictions.x, l)  # Не движемся дальше левой границы
+        l = min(-self.restrictions.x, l)
         return Rect(l, t, w, h)
 
 
 class ListenerManager(b2ContactListener):
     def __init__(self, *listeners):
+        """Прослушка коллизий"""
         b2ContactListener.__init__(self)
         self.listeners = listeners
 
     def BeginContact(self, contact):
+        """Начало контакта"""
         fixture_a = contact.fixtureA
         fixture_b = contact.fixtureB
-        body_a, body_b = fixture_a.body, fixture_b.body
-        if body_a.userData is not None or body_b.userData is not None:
-            ud_a, ud_b = body_a.userData, body_b.userData
+        if fixture_a.body.userData is not None or fixture_b.body.userData is not None:
             for listener in self.listeners:
                 listener.BeginContact(contact)
 
     def EndContact(self, contact):
+        """Конец контакта"""
         fixture_a = contact.fixtureA
         fixture_b = contact.fixtureB
-        body_a, body_b = fixture_a.body, fixture_b.body
-        if body_a.userData is not None or body_b.userData is not None:
-            ud_a, ud_b = body_a.userData, body_b.userData
+        if fixture_a.body.userData is not None or fixture_b.body.userData is not None:
             for listener in self.listeners:
                 listener.EndContact(contact)
 
     def PreSolve(self, contact, oldManifold):
+        """пресолв коллизии"""
         pass
 
     def PostSolve(self, contact, impulse):
+        """пост-солв коллизии"""
         pass
 
 
 class Car:
     def __init__(self, vehicle_code="", level=None, position=(10, 70), modifications=None):
-
+        """Класс самого автомобиля"""
         with open("cars_settings.json", "r") as read_file:
             car_data = json.load(read_file)
             if vehicle_code not in car_data:
@@ -933,18 +962,16 @@ class Car:
             self.car_body_image = pygame.transform.scale(self.car_body_image, (
                 int(self.BODY_SPRITE_SCALE[0] * PPM * 2), int(self.BODY_SPRITE_SCALE[1] * PPM * 2)))
 
+        # Применение модификаций к автомобилю
         if modifications is not None:
             for key in modifications:
                 if hasattr(self, key):
                     setattr(self, key, modifications[key])
+
         # Переменные
         self.rect = pygame.rect.Rect(0, 0, 0, 0)
         self.sprite_group = pygame.sprite.Group()
         self.fuel = self.MAX_FUEL
-
-        # Перемотка времени
-        self.last_positions = []
-        self.reversing_time = False
 
         # Физическое положени автомобиля
         self.car_flips_n = 0
@@ -959,8 +986,10 @@ class Car:
         x, y = position
         w, h = (self.CAR_WIDTH, self.CAR_HEIGHT)
 
+        # Связь с уровнем
         self.PHYSICAL_WORLD = level.PHYSICAL_WORLD
         self.level = level
+
         # Инициализация физического тела корпуса
         self.main_body = self.PHYSICAL_WORLD.CreateDynamicBody(position=(x, y))
         self.main_body.userData = "car_body"
@@ -969,6 +998,8 @@ class Car:
         self.wheel_grounding = {}
         self.wheels = []
         self.flipped_frame_counter = 0
+
+        # Создание всех колёс
         for wheel_name in self.WHEELS_DATA:
             wheel_data = self.WHEELS_DATA[wheel_name]
             wheel_density = wheel_data["WHEEL_DENSITY"]
@@ -986,14 +1017,17 @@ class Car:
 
     @property
     def is_grounded(self):
+        """Автомобиль ноходится на земле"""
         return all(self.wheel_grounding.values())
 
     @property
     def speed(self):
+        """Скорость автомобиля"""
         return round(abs(self.main_body.linearVelocity.x) + abs(self.main_body.linearVelocity.y), 2)
 
     @property
     def rpm(self):
+        """Обороты в минуту"""
         rpm = 0
         for wheel in self.wheels:
             rpm += abs(wheel.angularVelocity)
@@ -1002,36 +1036,45 @@ class Car:
 
     @property
     def longitude(self):
+        """Положение автомобиля по координате X"""
         return self.main_body.position.x
 
     @property
     def position(self):
+        """Положение автомобиля"""
         return self.main_body.position
 
     def refuel(self):
+        """Заправка автомобиля"""
         self.fuel = self.MAX_FUEL
 
     @property
     def can_drive(self):
+        """Может ли автомобиль продолжать движение"""
         return self.fuel > 0 and not self.flipped_frame_counter > 100
 
     def tilt_left(self):
+        """Наклон влево"""
         self.main_body.angularVelocity += self.ROTATION_SPEED / 10
 
     def tilt_right(self):
+        """Наклон вправо"""
         self.main_body.angularVelocity -= self.ROTATION_SPEED / 10
 
     def move(self):
+        """Нажатие на педаль газа"""
         for wheel in self.wheels:
             if wheel.wheel_body.angularVelocity > -self.MAX_CAR_SPEED:
                 wheel.wheel_body.angularVelocity -= self.ACCELERATION
 
     def brake(self):
+        """Торможение"""
         for wheel in self.wheels:
             if wheel.wheel_body.angularVelocity < self.MAX_CAR_SPEED:
                 wheel.wheel_body.angularVelocity += self.ACCELERATION
 
     def release(self):
+        """Применение силы трения"""
         idle_brake_speed = 0.2
         for wheel in self.wheels:
             try:
@@ -1043,6 +1086,7 @@ class Car:
                 continue
 
     def update(self, events):
+        """Обновление автомобиля"""
         for event in events:
             if event.type == pygame.USEREVENT + 2:
                 self.fuel = max(self.fuel - 1, 0)
@@ -1075,21 +1119,6 @@ class Car:
             self.flipped_frame_counter += 1
         else:
             self.flipped_frame_counter = 0
-
-    def reverse_step(self):
-        pass
-        """if len(self.last_positions):
-            pos = self.last_positions[-1]
-            body_pos, body_rot = (pos[0][0].x, pos[0][0].y), pos[0][1]
-            left_wheel, right_wheel = pos[1], pos[2]
-            self.main_body.position = b2Vec2(*body_pos)
-            self.main_body.angle = body_rot
-            self.left_wheel.position = left_wheel
-            self.right_wheel.position = right_wheel
-            self.last_positions = self.last_positions[:-1]"""
-
-    def reverse_full(self):
-        self.reversing_time = True
 
     def BeginContact(self, contact):
         """Обработка начала коллизии"""
@@ -1144,6 +1173,7 @@ class Car:
 
 class Level:
     def __init__(self, level=None, vehicle=None, menu=None, vehicle_modifications=None):
+        """Класс уровня"""
         global LINE_COLOR, colors, GROUND_TEXTURE
 
         self.modifications = vehicle_modifications
@@ -1244,9 +1274,11 @@ class Level:
 
     @property
     def has_entities(self):
+        """На уровне есть объекты-спрайты"""
         return self.LEVEL_ENTITIES != []
 
     def end_level(self):
+        """Завершение уровня, gameover экран"""
         if self.exit_level_timer is None:
             self.exit_level_timer = pygame.time.get_ticks()
         if self.vehicle.fuel == 0:
@@ -1254,17 +1286,18 @@ class Level:
         else:
             self.display_message("Flipped!", 100)
         if (pygame.time.get_ticks() - self.exit_level_timer) / 1000 > 5:
-            self.save()
             self.gameover_screen_running = True
             gameover_menu = GameOverScreen(self)
             while self.gameover_screen_running:
                 gameover_menu.update(screen)
-            menu.running = False
+            self.exit()
 
     def pause(self):
+        """Пауза"""
         self.is_paused = not self.is_paused
 
     def save(self):
+        """Сохранение денег и рекордов"""
         with open("player_data.json") as f:
             data = json.load(f)
             data["money"] = int(data["money"] + self.level_money)
@@ -1275,6 +1308,7 @@ class Level:
         self.menu.update_player_data()
 
     def reset(self):
+        """Перезапуск уровня"""
         for body in self.PHYSICAL_WORLD.bodies:
             self.PHYSICAL_WORLD.DestroyBody(body)
 
@@ -1288,10 +1322,12 @@ class Level:
         self.vehicle = Car(self.VEHICLE_CODE, self, modifications=self.modifications)
 
     def exit(self):
+        """Выход в главное меню"""
         self.save()
         self.menu.running = False
 
     def update(self):
+        """Обновление уровня"""
         global camera
 
         screen.fill(self.BACKGROUND_COLOR)
@@ -1320,8 +1356,8 @@ class Level:
             try:
                 pygame.gfxdraw.textured_polygon(screen, ((cx, 0), (cx + 30, 0),
                                                          (cx + 30, SCREEN_HEIGHT),
-                                                         (cx, SCREEN_HEIGHT)), checkpoint_tile, -int(DELTAX) % 30,
-                                                -int(DELTAY) % 40)
+                                                         (cx, SCREEN_HEIGHT)), checkpoint_tile, -int(delta_x) % 30,
+                                                -int(delta_y) % 40)
             except:
                 pass
         if self.vehicle.longitude >= self.next_checkpoint:
@@ -1397,16 +1433,14 @@ class Level:
         clock.tick(TARGET_FPS)
 
     def get_fuel_bar_color(self, percent):
+        """Получение цвета полоски по процентам"""
         try:
             return fuel_bar_colors.get_at((int(fuel_bar_colors.get_width() / 100 * percent) - 1, 0))
         except IndexError:
             return (255, 0, 0)
 
     def draw_ui(self):
-        """fps_counter = sf_pro_font.render(str(int(clock.get_fps())), True,
-                                         (255, 255, 255))
-
-        screen.blit(fps_counter, (10, 50))"""
+        """Отрисовка элементов интерфейса"""
 
         filled_fuel = pygame.Surface((fuel_rect.get_width(), fuel_rect.get_height()))
         filled_fuel.fill(self.get_fuel_bar_color(self.vehicle.fuel / self.vehicle.MAX_FUEL * 100))
@@ -1468,14 +1502,17 @@ class Level:
             screen.blit(message, (696, 208))
 
     def display_message(self, text, secs):
+        """Отображение сообщения на экране"""
         self.last_message_display_time = time.time() + secs
         self.message_text = text
 
     def shake_camera(self):
+        """Встряхнуть камеру"""
         self.camera.offset = shake()
 
 
 class GameOverScreen:
+    """Шрифты:"""
     sf_pro_font_100 = pygame.font.Font(
         r"C:\Users\d1520\Desktop\LyceumPygameProject\HillClimbRacing\SFProDisplay-Regular.ttf", 100)
     sf_pro_font_72 = pygame.font.Font(
@@ -1484,6 +1521,9 @@ class GameOverScreen:
         r"C:\Users\d1520\Desktop\LyceumPygameProject\HillClimbRacing\SFProDisplay-Regular.ttf", 64)
 
     def __init__(self, level):
+        """Класс экрана Game Over"""
+
+        # Связь с уровнем
         self.level = level
         self.last_image = level.last_image
 
@@ -1538,6 +1578,7 @@ class GameOverScreen:
         self.start_time = time.time()
 
     def transition(self, image, percent, position=(100, 100)):
+        """Применение перехода к элементам интерфейса"""
         angle = min(0, -(90 / 100 * (100 - percent)))
         opacity = min(255 / 100 * percent, 255)
         rotated_image, new_origin = rotate_image(image, position,
@@ -1547,12 +1588,15 @@ class GameOverScreen:
         return rotated_image, new_origin
 
     def update(self, surface):
+        """Обновление - отрисовка"""
         events = pygame.event.get()
+
         for event in events:
             if event.type == pygame.QUIT:
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 self.level.gameover_screen_running = False
+
         # Задний фон - картинка + тинт
         surface.blit(self.last_image, (0, 0))
 
