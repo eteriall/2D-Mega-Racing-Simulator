@@ -1,4 +1,3 @@
-import copy
 import json
 import math
 import os
@@ -6,17 +5,13 @@ import random
 import sys
 import time
 from pygame import gfxdraw
-import pygame
 
-import collision
 import pygame
-from Box2D import Box2D, b2WheelJointDef, b2Vec2, b2FixtureDef, b2BodyDef, b2PolygonShape, b2ContactListener
+from Box2D import b2WheelJointDef, b2Vec2, b2FixtureDef, b2BodyDef, b2PolygonShape, b2ContactListener
 from Box2D.b2 import world, polygonShape, circleShape, staticBody, dynamicBody
 from pygame.rect import Rect
 from pygame.sprite import Sprite
 from pygame_widgets import Button as BrokenButton
-
-from test import compute_bezier_points
 
 pygame.init()
 pygame.mixer.init()
@@ -364,7 +359,7 @@ class MainMenu:
 
     def load_player_data(self):
         """Загрузка данных игрока"""
-        with open("player_data.json") as f:
+        with open("data/player_data.json") as f:
             data = json.load(f)
             return data
 
@@ -428,8 +423,7 @@ class MainMenu:
 
     def update_player_data(self):
         """Загрузка данных игрока в переменную self.player_data"""
-        with open("player_data.json") as f:
-            self.player_data = json.load(f)
+        self.player_data = self.load_player_data()
 
     def choose_vehicle_screen(self, source=None):
         """Выбор экрана выбора транспорта"""
@@ -485,21 +479,20 @@ class MainMenu:
 
     def get_cars(self):
         """Получение всех автомобилей в игре"""
-        with open("cars_settings.json") as f:
+        with open("data/cars_settings.json") as f:
             cars = json.load(f)
         return cars
 
     def get_levels(self):
         """Получение всех уровней в игре"""
-        with open("levels.json") as f:
+        with open("data/levels.json") as f:
             levels = json.load(f)
         return levels
 
     def load_upgrades(self, car_name):
         """Подгрузка прокаченных параметров машины пользователя для обновления экрана тюнинга"""
         car_data = self.get_cars()[self.chosen_car_name]
-        with open("player_data.json") as f:
-            upgrades = json.load(f)["cars"][car_name]
+        upgrades = self.load_player_data()["cars"][car_name]
         for category_button, upgrade_name in zip(self.tuning_screen, list(upgrades.keys())):
             upgrade_data = car_data["upgrades"][upgrade_name]
             max_level = upgrade_data["levels"]
@@ -908,7 +901,7 @@ class ListenerManager(b2ContactListener):
 class Car:
     def __init__(self, vehicle_code="", level=None, position=(10, 70), modifications=None):
         """Класс самого автомобиля"""
-        with open("cars_settings.json", "r") as read_file:
+        with open("data/cars_settings.json", "r") as read_file:
             car_data = json.load(read_file)
             if vehicle_code not in car_data:
                 raise ValueError("Can't find car in json file")
@@ -1183,7 +1176,7 @@ class Level:
         self.menu = menu
         self.level_money = 0
         self.exit_level_timer = None
-        with open("levels.json", "r") as read_file:
+        with open("data/levels.json", "r") as read_file:
             LEVELS_DATA = json.load(read_file)
             if level not in LEVELS_DATA:
                 raise ValueError("Can't find level in json file")
@@ -1298,12 +1291,12 @@ class Level:
 
     def save(self):
         """Сохранение денег и рекордов"""
-        with open("player_data.json") as f:
+        with open("data/player_data.json") as f:
             data = json.load(f)
             data["money"] = int(data["money"] + self.level_money)
             data["levels"][self.LEVEL_CODE]["record"] = self.level_record
             data["levels"][self.LEVEL_CODE]["next_stage"] = self.next_target
-        with open("player_data.json", mode="w") as f:
+        with open("data/player_data.json", mode="w") as f:
             json.dump(data, f)
         self.menu.update_player_data()
 
@@ -1514,11 +1507,11 @@ class Level:
 class GameOverScreen:
     """Шрифты:"""
     sf_pro_font_100 = pygame.font.Font(
-        r"C:\Users\d1520\Desktop\LyceumPygameProject\HillClimbRacing\SFProDisplay-Regular.ttf", 100)
+        r"data/SFProDisplay-Regular.ttf", 100)
     sf_pro_font_72 = pygame.font.Font(
-        r"C:\Users\d1520\Desktop\LyceumPygameProject\HillClimbRacing\SFProDisplay-Regular.ttf", 72)
+        r"data/SFProDisplay-Regular.ttf", 72)
     sf_pro_font_64 = pygame.font.Font(
-        r"C:\Users\d1520\Desktop\LyceumPygameProject\HillClimbRacing\SFProDisplay-Regular.ttf", 64)
+        r"data/SFProDisplay-Regular.ttf", 64)
 
     def __init__(self, level):
         """Класс экрана Game Over"""
@@ -1656,7 +1649,7 @@ fuel_bar_colors = load_image("UI/fuel_bar_colors.png")
 GROUND_TEXTURE = load_image("ground/terrain_ground.png")
 
 sf_pro_font_36 = pygame.font.Font(
-    r"C:\Users\d1520\Desktop\LyceumPygameProject\HillClimbRacing\SFProDisplay-Regular.ttf", 48)
+    r"data/SFProDisplay-Regular.ttf", 48)
 sf_pro_font_72 = pygame.font.Font(
     None, 72)
 
