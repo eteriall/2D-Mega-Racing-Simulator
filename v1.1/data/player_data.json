@@ -1,0 +1,18 @@
+{
+  "money": 10000000,
+  "games-played": 0,
+  "cars": {
+    "Jeep": {
+      "MAX_CAR_SPEED": 1,
+      "ACCELERATION": 1,
+      "MAX_FUEL": 1,
+      "CAR_FRICTION": 1
+    }
+  },
+  "levels": {
+    "Hills": {
+      "record": 0,
+      "next-stage": 0
+    }
+  }
+}
