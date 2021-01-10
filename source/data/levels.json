@@ -1,8 +1,6 @@
 {
   "Hills" : {
-    "background": [144, 228, 255],
     "line-color": [172, 231, 78],
-    "ground-color": [93, 74, 47],
     "ground-texture": "ground/terrain_ground.png",
     "bg-texture": "bg/countryside_bg.png",
     "seed": "hills",
@@ -10,13 +8,11 @@
     "preview": "previews/countryside.png",
     "level-entities-frequency": 5,
     "gravity": -35,
-    "max_angle": 30,
+    "max-angle": 30,
     "price": 0
   },
   "Desert" : {
-    "background": [148, 211, 233],
     "line-color": [208, 208, 177],
-    "ground-color": [244, 244, 167],
     "ground-texture": "ground/desert_ground.png",
     "bg-texture": "bg/countryside_bg.png",
     "seed": "desert",
@@ -25,19 +21,17 @@
       "cactus": {
         "path": "cactus.png",
         "align": "midbottom",
-        "delta_y": 10
+        "delta-y": 10
       }
     },
     "level-entities-frequency": 2,
     "preview": "previews/desert.png",
     "gravity": -35,
-    "max_angle": 10,
+    "max-angle": 10,
     "price": 35000
   },
   "Moon" : {
-    "background": [3, 13, 50],
     "line-color": [193, 193, 193],
-    "ground-color": [144, 144, 189],
     "ground-texture": "ground/moon_ground.png",
     "bg-texture": "bg/moon_bg.png",
     "seed": "moon",
@@ -47,28 +41,26 @@
       "flag_rus": {
         "path": "flag_rus.png",
         "align": "bottomleft",
-        "delta_y": 10
+        "delta-y": 10
       },
       "flag_usa": {
         "path": "flag_usa.png",
         "align": "bottomleft",
-        "delta_y": 10
+        "delta-y": 10
       },
       "flag_china": {
         "path": "flag_china.png",
         "align": "bottomleft",
-        "delta_y": 10
+        "delta-y": 10
       }
     },
     "level-entities-frequency": 2,
     "gravity": -20,
-    "max_angle": 40,
+    "max-angle": 40,
     "price": 175000
   },
   "North Pole": {
-    "background": [3,6,12],
     "line-color": [202,248,255],
-    "ground-color": [68,153,147],
     "ground-texture": "ground/moon_ground.png",
     "bg-texture": "bg/moon_bg.png",
     "seed": "christmas",
@@ -77,17 +69,17 @@
       "tree": {
         "path": "tree.png",
         "align": "midbottom",
-        "delta_y": 10
+        "delta-y": 10
       },
       "present": {
         "path": "present.png",
         "align": "midbottom",
-        "delta_y": 1
+        "delta-y": 1
       }
     },
     "preview": "previews/north_pole.png",
     "gravity": -35,
-    "max_angle": 20,
+    "max-angle": 20,
     "level-entities-frequency": 5,
     "price": 300000
   }
