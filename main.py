@@ -31,9 +31,9 @@ DELTAX, DELTAY = 0, 0
 def shake():
     s = -1
     for _ in range(0, 5):
-        for x in range(0, 30, 5):
+        for x in range(0, 20, 10):
             yield (0, (x / 10 * s))
-        for x in range(30, 0, -5):
+        for x in range(20, 0, -10):
             yield (0, x / 10 * s)
         s *= -1
     while True:
@@ -966,12 +966,6 @@ class Car:
         self.main_body.userData = "car_body"
         main_body_fixture = self.main_body.CreatePolygonFixture(box=(w, h), density=self.BODY_DENSITY, friction=1)
 
-        """"
-            "WHEEL_DENSITY": 5,
-            "WHEEL_SIZE": 1,
-            "WHEEL_POSITION": [1.6, 2.4]
-        """
-
         self.wheel_grounding = {}
         self.wheels = []
         self.flipped_frame_counter = 0
@@ -992,7 +986,7 @@ class Car:
 
     @property
     def is_grounded(self):
-        return any(self.wheel_grounding.values())
+        return all(self.wheel_grounding.values())
 
     @property
     def speed(self):
@@ -1109,16 +1103,16 @@ class Car:
         # Связано ли касание с нашим авто?
         if data_a not in wheels_names and data_b not in wheels_names:
             return
-        if self.takeoff_time != -1 and time.time() - self.takeoff_time > 2:
-            # Длинный прыжок
-            menu.loaded_level.display_message(f"Long jump! {round(time.time() - self.takeoff_time, 1)}", 5)
-            self.level.airtimes += 1
-            self.level.level_money += int(round(time.time() - self.takeoff_time, 1) * 1000)
-
         if data_a in wheels_names:
             self.wheel_grounding[data_a] = True
         if data_b in wheels_names:
             self.wheel_grounding[data_b] = True
+        if self.takeoff_time != -1 and time.time() - self.takeoff_time > 2 and self.is_grounded:
+            # Длинный прыжок
+            self.level.shake_camera()
+            menu.loaded_level.display_message(f"Long jump! {round(time.time() - self.takeoff_time, 1)}", 5)
+            self.level.airtimes += 1
+            self.level.level_money += int(round(time.time() - self.takeoff_time, 1) * 1000)
 
     def EndContact(self, contact):
         """Обработка конца коллизии"""
@@ -1252,14 +1246,14 @@ class Level:
     def has_entities(self):
         return self.LEVEL_ENTITIES != []
 
-    def exit_level(self):
+    def end_level(self):
         if self.exit_level_timer is None:
             self.exit_level_timer = pygame.time.get_ticks()
         if self.vehicle.fuel == 0:
             self.display_message("Fuel ended!", 100)
         else:
             self.display_message("Flipped!", 100)
-        if (pygame.time.get_ticks() - self.exit_level_timer) / 1000 > 1:
+        if (pygame.time.get_ticks() - self.exit_level_timer) / 1000 > 5:
             self.save()
             self.gameover_screen_running = True
             gameover_menu = GameOverScreen(self)
@@ -1318,8 +1312,7 @@ class Level:
                 sys.exit()
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 self.is_paused = not self.is_paused
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_e:
-                camera.offset = shake()
+
         camera.delta_x, camera.delta_y = next(camera.offset)
         if self.next_checkpoint - self.vehicle.longitude < 80:
             checkpoint_coords = camera.apply_coords((self.next_checkpoint * PPM, 0))[0], 0
@@ -1356,7 +1349,7 @@ class Level:
                 self.vehicle.release()
         else:
             self.vehicle.release()
-            self.exit_level()
+            self.end_level()
 
         self.terrain.draw_entities(screen)
 
@@ -1478,61 +1471,87 @@ class Level:
         self.last_message_display_time = time.time() + secs
         self.message_text = text
 
+    def shake_camera(self):
+        self.camera.offset = shake()
+
 
 class GameOverScreen:
+    sf_pro_font_100 = pygame.font.Font(
+        r"C:\Users\d1520\Desktop\LyceumPygameProject\HillClimbRacing\SFProDisplay-Regular.ttf", 100)
+    sf_pro_font_72 = pygame.font.Font(
+        r"C:\Users\d1520\Desktop\LyceumPygameProject\HillClimbRacing\SFProDisplay-Regular.ttf", 72)
+    sf_pro_font_64 = pygame.font.Font(
+        r"C:\Users\d1520\Desktop\LyceumPygameProject\HillClimbRacing\SFProDisplay-Regular.ttf", 64)
+
     def __init__(self, level):
-        sf_pro_font_100 = pygame.font.Font(
-            r"C:\Users\d1520\Desktop\LyceumPygameProject\HillClimbRacing\SFProDisplay-Regular.ttf", 100)
-        sf_pro_font_72 = pygame.font.Font(
-            r"C:\Users\d1520\Desktop\LyceumPygameProject\HillClimbRacing\SFProDisplay-Regular.ttf", 72)
-        sf_pro_font_64 = pygame.font.Font(
-            r"C:\Users\d1520\Desktop\LyceumPygameProject\HillClimbRacing\SFProDisplay-Regular.ttf", 64)
         self.level = level
         self.last_image = level.last_image
 
         # Рендерим все элементы
         self.reason = "OUT OF FUEL!" if level.vehicle.fuel == 0 else "FLIPPED OVER!"
-        self.reason = sf_pro_font_100.render(self.reason, True, (255, 255, 255))
+        self.reason = self.sf_pro_font_100.render(self.reason, True, (255, 255, 255))
         self.record = f"Record: {self.level.level_record}m"
-        self.record = sf_pro_font_72.render(self.record, True, (255, 255, 255))
+        self.record = self.sf_pro_font_72.render(self.record, True, (255, 255, 255))
         self.coins = f"+{self.level.level_money} Coins"
-        self.coins = sf_pro_font_72.render(self.coins, True, (255, 255, 255))
+        self.coins = self.sf_pro_font_72.render(self.coins, True, (255, 255, 255))
         self.flips = f"x{self.level.frontflips} Frontflip x{self.level.backflips} Backflip"
-        self.flips = sf_pro_font_72.render(self.flips, True, (255, 255, 255))
+        self.flips = self.sf_pro_font_72.render(self.flips, True, (255, 255, 255))
         self.airtimes = f"x{self.level.airtimes} Air time"
-        self.airtimes = sf_pro_font_72.render(self.airtimes, True, (255, 255, 255))
+        self.airtimes = self.sf_pro_font_72.render(self.airtimes, True, (255, 255, 255))
 
         self.click = f"CLICK TO CONTINUE"
-        self.click = sf_pro_font_72.render(self.click, True, (255, 255, 255))
-        self.click_color = 255
-        self.click_color_increasing = False
+        self.click = self.sf_pro_font_72.render(self.click, True, (255, 255, 255))
+        self.click_opacity = 255
+        self.click_opacity_increasing = False
 
+        # Делаем снимок машинки
         car_pos = self.level.camera.apply_coords(self.level.vehicle.BODY_SPRITE.rect.center)
         car_pos = list(car_pos)
-        car_pos[0] -= 100
-        car_pos[1] -= 100
-        rect = pygame.Rect(*car_pos, int(700 / 1.5), int(580 / 1.5))
+        car_pos[0] = max(car_pos[0] - 250, 0)
+        car_pos[1] = max(car_pos[1] - 250, 0)
+        rect = pygame.Rect(*car_pos, int(700 / 1.3), int(580 / 1.3))
         sub = self.last_image.subsurface(rect)
         ui_frame = pygame.Surface((811, 811), pygame.SRCALPHA, 32)
         ui_frame.blit(pygame.transform.scale(sub, (700, 580)), (38, 36))
+
+        # Накладываем полароидную рамочку
         ui_frame.blit(frame, (0, 0))
+
+        # Пишем на фотке
         stunts = f"{self.level.airtimes}xAIRTIME, {self.level.frontflips + self.level.backflips}xFLIP"
-        stunts = sf_pro_font_64.render(stunts, True, (86, 86, 86))
+        stunts = self.sf_pro_font_64.render(stunts, True, (86, 86, 86))
         ui_frame.blit(stunts, (117, 646))
         meters = f"{int(self.level.vehicle.longitude)}m"
-        meters = sf_pro_font_100.render(meters, True, (255, 255, 255))
+        meters = self.sf_pro_font_100.render(meters, True, (255, 255, 255))
         ui_frame.blit(meters, (352, 52))
         level_name = f"IN {self.level.LEVEL_CODE.upper()}"
-        level_name = sf_pro_font_72.render(level_name, True, (255, 255, 255))
+        level_name = self.sf_pro_font_72.render(level_name, True, (255, 255, 255))
         ui_frame.blit(level_name, (352, 147))
-        self.car_image = ui_frame
+
+        self.ui_frame = ui_frame
+
+        # Вращаем снимок
+        self.car_image = Sprite()
+        self.car_image.image = ui_frame
+        self.car_image.rect = self.car_image.image.get_rect()
+        self.car_image.image, self.car_image.rect.topleft = rotate_image(ui_frame, (100, 200), (0, 0), 7)
+        self.start_time = time.time()
+
+    def transition(self, image, percent, position=(100, 100)):
+        angle = min(0, -(90 / 100 * (100 - percent)))
+        opacity = min(255 / 100 * percent, 255)
+        rotated_image, new_origin = rotate_image(image, position,
+                                                 (image.get_width() // 2, image.get_height() // 2),
+                                                 angle)
+        rotated_image.set_alpha(opacity)
+        return rotated_image, new_origin
 
     def update(self, surface):
         events = pygame.event.get()
         for event in events:
             if event.type == pygame.QUIT:
                 sys.exit()
-            if event.type == pygame.KEYDOWN:
+            if event.type == pygame.MOUSEBUTTONDOWN:
                 self.level.gameover_screen_running = False
         # Задний фон - картинка + тинт
         surface.blit(self.last_image, (0, 0))
@@ -1540,25 +1559,39 @@ class GameOverScreen:
         pygame.gfxdraw.filled_polygon(surface, ((0, 0), (SCREEN_WIDTH, 0),
                                                 (SCREEN_WIDTH, SCREEN_HEIGHT), (0, SCREEN_HEIGHT)),
                                       (0, 0, 0, 100))
-        surface.blit(self.car_image, (100, 100))
-        surface.blit(self.reason, (1093, 187))
-        surface.blit(self.record, (1155, 380))
-        surface.blit(self.coins, (1186, 467))
-        surface.blit(self.flips, (1056, 554))
-        surface.blit(self.airtimes, (1236, 641))
-        if self.click_color_increasing:
-            self.click_color = min(255, self.click_color + 5)
-            if self.click_color == 255:
-                self.click_color_increasing = False
+        surface.blit(self.car_image.image, self.car_image.rect.topleft)
+
+        time_delta = int((time.time() - self.start_time) * 1000) * 2
+        reason, reason_point = self.transition(self.reason, time_delta / 10, (1405, 260))
+        surface.blit(reason, reason_point)
+
+        record, record_point = self.transition(self.record, max(0, time_delta - 1000) / 10, (1405, 423))
+        surface.blit(record, record_point)
+
+        coins, coins_point = self.transition(self.coins, max(0, time_delta - 2000) / 10, (1405, 510))
+        surface.blit(coins, coins_point)
+
+        flips, flips_point = self.transition(self.flips, max(0, time_delta - 3000) / 10, (1405, 597))
+        surface.blit(flips, flips_point)
+
+        airtimes, airtimes_point = self.transition(self.airtimes, max(0, time_delta - 4000) / 10, (1405, 684))
+        surface.blit(airtimes, airtimes_point)
+
+        if self.click_opacity_increasing:
+            self.click_opacity = min(255, self.click_opacity + 10)
+            if self.click_opacity == 255:
+                self.click_opacity_increasing = False
         else:
-            self.click_color = max(100, self.click_color - 5)
-            if self.click_color == 100:
-                self.click_color_increasing = True
-        self.click = f"PRESS ANY BUTTON"
-        self.click = sf_pro_font_72.render(self.click, True, (self.click_color, self.click_color, self.click_color))
+            self.click_opacity = max(30, self.click_opacity - 10)
+            if self.click_opacity == 30:
+                self.click_opacity_increasing = True
+        self.click = f"CLICK TO CONTINUE"
+        self.click = self.sf_pro_font_72.render(self.click, True,
+                                                (255, 255, 255))
+        self.click.set_alpha(self.click_opacity)
         surface.blit(self.click, (1071, 795))
         pygame.display.update()
-        clock.tick(20)
+        clock.tick(100)
 
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
