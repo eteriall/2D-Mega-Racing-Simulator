@@ -1,0 +1,398 @@
+{
+  "Jeep": {
+    "price": 0,
+    "preview": "previews/jeep_preview.png",
+    "parameters": {
+      "MAX_FUEL": 100,
+      "MAX_CAR_SPEED": 15,
+      "MAX_CAR_REVERSE_SPEED": 10,
+      "ACCELERATION": 1,
+      "ROTATION_SPEED": 1,
+      "BRAKES": 3,
+      "CAR_WIDTH": 4,
+      "CAR_HEIGHT": 1,
+      "CAR_FRICTION": 30,
+      "BODY_DENSITY": 1,
+      "BODY_SPRITE_DELTA": [
+        -3,
+        0
+      ],
+      "BODY_SPRITE_SCALE": [
+        5,
+        2.5
+      ],
+      "MAX_REVERSE_TIME_STEPS_AMOUNT": 6000,
+      "wheels": {
+        "left_wheel": {
+          "WHEEL_DENSITY": 5,
+          "WHEEL_SIZE": 1,
+          "WHEEL_POSITION": [
+            -3,
+            2.4
+          ]
+        },
+        "right_wheel": {
+          "WHEEL_DENSITY": 5,
+          "WHEEL_SIZE": 1,
+          "WHEEL_POSITION": [
+            3,
+            2.4
+          ]
+        }
+      }
+    },
+    "sprites": {
+      "body": "cars/Car.png",
+      "wheel": "wheels/Tire.png"
+    },
+    "upgrades": {
+      "MAX_CAR_SPEED": {
+        "start_price": 10000,
+        "price_multiplier": 1.5,
+        "max_value": 30,
+        "levels": 5
+      },
+      "ACCELERATION": {
+        "start_price": 10000,
+        "price_multiplier": 1.5,
+        "max_value": 5,
+        "levels": 3
+      },
+      "MAX_FUEL": {
+        "start_price": 10000,
+        "price_multiplier": 1.5,
+        "max_value": 300,
+        "levels": 5
+      },
+      "CAR_FRICTION": {
+        "start_price": 10000,
+        "price_multiplier": 1.5,
+        "max_value": 100,
+        "levels": 5
+      }
+    }
+  },
+  "Race car": {
+    "price": 100000,
+    "preview": "previews/race_car_preview.png",
+    "parameters": {
+      "MAX_FUEL": 50,
+      "MAX_CAR_SPEED": 15,
+      "MAX_CAR_REVERSE_SPEED": 30,
+      "ACCELERATION": 1,
+      "BRAKES": 5,
+      "ROTATION_SPEED": 1,
+      "CAR_WIDTH": 3,
+      "CAR_HEIGHT": 1,
+      "CAR_FRICTION": 30,
+      "BODY_DENSITY": 1,
+      "BODY_SPRITE_DELTA": [
+        -3,
+        0
+      ],
+      "BODY_SPRITE_SCALE": [
+        5,
+        2.5
+      ],
+      "MAX_REVERSE_TIME_STEPS_AMOUNT": 6000,
+      "wheels": {
+        "left_wheel": {
+          "WHEEL_DENSITY": 1,
+          "WHEEL_SIZE": 1.2,
+          "WHEEL_POSITION": [
+            -2.8,
+            1
+          ]
+        },
+        "right_wheel": {
+          "WHEEL_DENSITY": 2,
+          "WHEEL_SIZE": 1,
+          "WHEEL_POSITION": [
+            2.8,
+            1
+          ]
+        }
+      }
+    },
+    "sprites": {
+      "body": "cars/car-racecar.png",
+      "wheel": "wheels/Tire.png"
+    },
+    "upgrades": {
+      "MAX_CAR_SPEED": {
+        "start_price": 10000,
+        "price_multiplier": 1.5,
+        "max_value": 80,
+        "levels": 10
+      },
+      "ACCELERATION": {
+        "start_price": 10000,
+        "price_multiplier": 1.5,
+        "max_value": 10,
+        "levels": 5
+      },
+      "MAX_FUEL": {
+        "start_price": 10000,
+        "price_multiplier": 1.5,
+        "max_value": 150,
+        "levels": 3
+      },
+      "CAR_FRICTION": {
+        "start_price": 10000,
+        "price_multiplier": 1.5,
+        "max_value": 100,
+        "levels": 5
+      }
+    }
+  },
+  "Quadracycle": {
+    "price": 75000,
+    "preview": "previews/quad_preview.png",
+    "parameters": {
+      "MAX_FUEL": 100,
+      "MAX_CAR_SPEED": 29,
+      "MAX_CAR_REVERSE_SPEED": 10,
+      "ROTATION_SPEED": 1,
+      "ACCELERATION": 5,
+      "BRAKES": 3,
+      "CAR_WIDTH": 4,
+      "CAR_HEIGHT": 1,
+      "CAR_FRICTION": 30,
+      "BODY_DENSITY": 1,
+      "WHEEL_DENSITY": 1,
+      "WHEEL_SIZE": 1.5,
+      "WHEELS_DISTANCE": 1.1,
+      "WHEEL_DELTA": [
+        1,
+        2.5
+      ],
+      "BODY_SPRITE_DELTA": [
+        -3,
+        0
+      ],
+      "BODY_SPRITE_SCALE": [
+        5.4,
+        2.7
+      ],
+      "MAX_REVERSE_TIME_STEPS_AMOUNT": 6000,
+      "wheels": {
+        "left_wheel": {
+          "WHEEL_DENSITY": 1,
+          "WHEEL_SIZE": 1.5,
+          "WHEEL_POSITION": [
+            3,
+            2.4
+          ]
+        },
+        "right_wheel": {
+          "WHEEL_DENSITY": 1,
+          "WHEEL_SIZE": 1.5,
+          "WHEEL_POSITION": [
+            -3,
+            2.4
+          ]
+        }
+      }
+    },
+    "sprites": {
+      "body": "cars/car-quadbike.png",
+      "wheel": "wheels/Tire.png"
+    },
+    "upgrades": {
+      "MAX_CAR_SPEED": {
+        "start_price": 10000,
+        "price_multiplier": 1.5,
+        "max_value": 50,
+        "levels": 5
+      },
+      "ACCELERATION": {
+        "start_price": 10000,
+        "price_multiplier": 1.5,
+        "max_value": 5,
+        "levels": 3
+      },
+      "MAX_FUEL": {
+        "start_price": 10000,
+        "price_multiplier": 1.5,
+        "max_value": 300,
+        "levels": 5
+      },
+      "CAR_FRICTION": {
+        "start_price": 10000,
+        "price_multiplier": 1.5,
+        "max_value": 100,
+        "levels": 5
+      }
+    }
+  },
+  "Tourist Bus": {
+    "price": 50000,
+    "preview": "previews/bus_preview.png",
+    "parameters": {
+      "MAX_FUEL": 200,
+      "MAX_CAR_SPEED": 30,
+      "MAX_CAR_REVERSE_SPEED": 30,
+      "ACCELERATION": 2,
+      "BRAKES": 1,
+      "ROTATION_SPEED": 1,
+      "CAR_WIDTH": 7,
+      "CAR_HEIGHT": 2,
+      "CAR_FRICTION": 30,
+      "BODY_DENSITY": 1,
+      "BODY_SPRITE_DELTA": [
+        -3,
+        0
+      ],
+      "BODY_SPRITE_SCALE": [
+        8,
+        4
+      ],
+      "MAX_REVERSE_TIME_STEPS_AMOUNT": 6000,
+      "wheels": {
+        "left_wheel": {
+          "WHEEL_DENSITY": 20,
+          "WHEEL_SIZE": 1,
+          "WHEEL_POSITION": [
+            -4.3,
+            2.4
+          ]
+        },
+        "right_wheel": {
+          "WHEEL_DENSITY": 20,
+          "WHEEL_SIZE": 1,
+          "WHEEL_POSITION": [
+            5.3,
+            2.4
+          ]
+        }
+      }
+    },
+    "sprites": {
+      "body": "cars/touristbus.png",
+      "wheel": "wheels/Tire.png"
+    },
+    "upgrades": {
+      "MAX_CAR_SPEED": {
+        "start_price": 10000,
+        "price_multiplier": 1.5,
+        "max_value": 60,
+        "levels": 5
+      },
+      "BRAKES": {
+        "start_price": 10000,
+        "price_multiplier": 1.5,
+        "max_value": 5,
+        "levels": 3
+      },
+      "MAX_FUEL": {
+        "start_price": 10000,
+        "price_multiplier": 1.5,
+        "max_value": 300,
+        "levels": 3
+      },
+      "CAR_FRICTION": {
+        "start_price": 10000,
+        "price_multiplier": 1.5,
+        "max_value": 100,
+        "levels": 5
+      }
+    }
+  },
+  "Tank": {
+    "price": 200000,
+    "preview": "previews/tank_preview.png",
+    "parameters": {
+      "MAX_FUEL": 100,
+      "MAX_CAR_SPEED": 20,
+      "MAX_CAR_REVERSE_SPEED": 30,
+      "ACCELERATION": 1,
+      "BRAKES": 5,
+      "ROTATION_SPEED": 0.5,
+      "CAR_WIDTH": 5,
+      "CAR_HEIGHT": 1,
+      "CAR_FRICTION": 1000,
+      "BODY_DENSITY": 1,
+      "BODY_SPRITE_DELTA": [
+        -3,
+        0
+      ],
+      "BODY_SPRITE_SCALE": [
+        8,
+        4
+      ],
+      "MAX_REVERSE_TIME_STEPS_AMOUNT": 6000,
+      "wheels": {
+        "1": {
+          "WHEEL_DENSITY": 5,
+          "WHEEL_SIZE": 1,
+          "WHEEL_POSITION": [
+            -6.5,
+            1
+          ]
+        },
+        "2": {
+          "WHEEL_DENSITY": 5,
+          "WHEEL_SIZE": 1,
+          "WHEEL_POSITION": [
+            -3.7,
+            1.5
+          ]
+        },
+        "3": {
+          "WHEEL_DENSITY": 5,
+          "WHEEL_SIZE": 1,
+          "WHEEL_POSITION": [
+            -0.9,
+            1.5
+          ]
+        },
+        "4": {
+          "WHEEL_DENSITY": 5,
+          "WHEEL_SIZE": 1,
+          "WHEEL_POSITION": [
+            1.8,
+            1.5
+          ]
+        },
+        "5": {
+          "WHEEL_DENSITY": 5,
+          "WHEEL_SIZE": 1,
+          "WHEEL_POSITION": [
+            4.5,
+            1
+          ]
+        }
+      }
+    },
+    "sprites": {
+      "body": "cars/tank.png",
+      "wheel": "wheels/bike-tire.png"
+    },
+    "upgrades": {
+      "MAX_CAR_SPEED": {
+        "start_price": 10000,
+        "price_multiplier": 1.5,
+        "max_value": 80,
+        "levels": 5
+      },
+      "ACCELERATION": {
+        "start_price": 10000,
+        "price_multiplier": 1.5,
+        "max_value": 5,
+        "levels": 3
+      },
+      "MAX_FUEL": {
+        "start_price": 10000,
+        "price_multiplier": 1.5,
+        "max_value": 500,
+        "levels": 5
+      },
+      "CAR_FRICTION": {
+        "start_price": 10000,
+        "price_multiplier": 1.5,
+        "max_value": 100,
+        "levels": 5
+      }
+    }
+  }
+}
