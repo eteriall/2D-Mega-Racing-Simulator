@@ -14,7 +14,9 @@ from pygame.sprite import Sprite
 from pygame_widgets import Button as BrokenButton
 
 pygame.init()
+pygame.mixer.pre_init(44100, -16, 2, 2048)
 pygame.mixer.init()
+pygame.mixer.music.set_volume(0.05)
 
 """Константы экрана и камеры"""
 PPM = 23
@@ -156,6 +158,7 @@ class Button(BrokenButton):
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if self.contains(*event.pos):
                         self.onClick(self)
+                        button_sound.play()
             x, y = pygame.mouse.get_pos()
             if self.contains(x, y) and pygame.mouse.get_pressed(3)[0]:
                 self.colour = self.pressedColour
@@ -356,6 +359,8 @@ class MainMenu:
         self.running = False
         self.loaded_level = None
         self.start_time = int(round(time.time() * 1000))
+        pygame.mixer.music.load('sounds/menu.mp3')
+        pygame.mixer.music.play(-1, fade_ms=2000)
 
     def load_player_data(self):
         """Загрузка данных игрока"""
@@ -601,13 +606,13 @@ class MainMenu:
         price = level_data["price"]
         if price <= self.player_data["money"]:
             self.player_data["money"] = int(self.player_data["money"] - price)
-            self.player_data["levels"][level_name] = {"record": 0, "next_stage": level_data["stage_step"]}
+            self.player_data["levels"][level_name] = {"record": 0, "next-stage": level_data["stage-step"]}
             self.save_player_data()
             self.update_category_buttons()
 
     def save_player_data(self):
         """Сохранение"""
-        with open("player_data.json", mode="w") as f:
+        with open("data/player_data.json", mode="w") as f:
             json.dump(self.player_data, f)
 
 
@@ -807,7 +812,7 @@ class Terrain:
         sprite.rect = sprite.image.get_rect()
 
         align = entity_data["align"]
-        pos[1] += entity_data["delta_y"]
+        pos[1] += entity_data["delta-y"]
 
         if align == "bottomleft":
             sprite.rect.bottomleft = pos
@@ -940,9 +945,7 @@ class Car:
             # Масса автомобиля
             self.BODY_DENSITY = parameters["BODY_DENSITY"]
 
-            # Кол-во фреймов, на которые мы можем откатиться
-            self.MAX_REVERSE_TIME_STEPS_AMOUNT = parameters["MAX_REVERSE_TIME_STEPS_AMOUNT"]
-
+            # Запас топлива
             self.MAX_FUEL = parameters["MAX_FUEL"]
 
             # Все колёса автомобиля
@@ -1183,11 +1186,8 @@ class Level:
             level_parameters = LEVELS_DATA[level]
             GROUND_TEXTURE = load_image(level_parameters["ground-texture"])
             self.PHYSICAL_WORLD = world(gravity=(0, level_parameters["gravity"]))
-            self.MAX_ANGLE = level_parameters["max_angle"]
-            self.BACKGROUND_COLOR = level_parameters["background"]
+            self.MAX_ANGLE = level_parameters["max-angle"]
             self.LINE_COLOR = level_parameters["line-color"]
-
-            self.GROUND_COLOR = level_parameters["ground-color"]
             self.BACKGROUND_TEXTURE = load_image(level_parameters["bg-texture"])
             self.level_record = self.menu.player_levels[level]["record"]
             self.next_target = self.menu.player_levels[level]["next-stage"]
@@ -1195,7 +1195,6 @@ class Level:
 
             self.LEVEL_ENTITIES = []
 
-            colors["t"] = self.GROUND_COLOR
             colors["l"] = self.LINE_COLOR
 
             if "level-entities" in level_parameters:
@@ -1265,6 +1264,9 @@ class Level:
         self.display_message(f"Reach {self.next_target}m for additional points!", 3)
         self.last_image = None
 
+        pygame.mixer.music.load('sounds/game.mp3')
+        pygame.mixer.music.play(-1, fade_ms=2000)
+
     @property
     def has_entities(self):
         """На уровне есть объекты-спрайты"""
@@ -1275,9 +1277,9 @@ class Level:
         if self.exit_level_timer is None:
             self.exit_level_timer = pygame.time.get_ticks()
         if self.vehicle.fuel == 0:
-            self.display_message("Fuel ended!", 100)
+            self.display_message("Out of Fuel!", 100)
         else:
-            self.display_message("Flipped!", 100)
+            self.display_message("Flipped over!", 100)
         if (pygame.time.get_ticks() - self.exit_level_timer) / 1000 > 5:
             self.gameover_screen_running = True
             gameover_menu = GameOverScreen(self)
@@ -1295,7 +1297,7 @@ class Level:
             data = json.load(f)
             data["money"] = int(data["money"] + self.level_money)
             data["levels"][self.LEVEL_CODE]["record"] = self.level_record
-            data["levels"][self.LEVEL_CODE]["next_stage"] = self.next_target
+            data["levels"][self.LEVEL_CODE]["next-stage"] = self.next_target
         with open("data/player_data.json", mode="w") as f:
             json.dump(data, f)
         self.menu.update_player_data()
@@ -1304,7 +1306,8 @@ class Level:
         """Перезапуск уровня"""
         for body in self.PHYSICAL_WORLD.bodies:
             self.PHYSICAL_WORLD.DestroyBody(body)
-
+        pygame.mixer.music.load('sounds/game.mp3')
+        pygame.mixer.music.play(-1, fade_ms=2000)
         self.terrain = Terrain(self)
         self.terrain.create_chunk()
         self.terrain.create_border(0)
@@ -1316,6 +1319,8 @@ class Level:
 
     def exit(self):
         """Выход в главное меню"""
+        pygame.mixer.music.load('sounds/menu.mp3')
+        pygame.mixer.music.play(-1, fade_ms=2000)
         self.save()
         self.menu.running = False
 
@@ -1323,7 +1328,6 @@ class Level:
         """Обновление уровня"""
         global camera
 
-        screen.fill(self.BACKGROUND_COLOR)
         try:
             pygame.gfxdraw.textured_polygon(screen, ((0, 0), (SCREEN_WIDTH, 0),
                                                      (SCREEN_WIDTH, SCREEN_HEIGHT),
@@ -1340,7 +1344,7 @@ class Level:
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                self.is_paused = not self.is_paused
+                self.pause()
 
         camera.delta_x, camera.delta_y = next(camera.offset)
         if self.next_checkpoint - self.vehicle.longitude < 80:
@@ -1599,6 +1603,8 @@ class GameOverScreen:
         surface.blit(self.car_image.image, self.car_image.rect.topleft)
 
         time_delta = int((time.time() - self.start_time) * 1000) * 2
+        if time_delta in (1000, 2000, 3000, 4000, 5000):
+            tab_sound.play()
         reason, reason_point = self.transition(self.reason, time_delta / 10, (1405, 260))
         surface.blit(reason, reason_point)
 
@@ -1664,7 +1670,8 @@ double_arrow = load_image("UI/double_arrow.png")
 frame = load_image("UI/frame.png")
 checkpoint_tile = load_image("checkpoint.png")
 checkpoint_tile.set_alpha(100)
-
+button_sound = pygame.mixer.Sound("sounds/button.mp3")
+tab_sound = pygame.mixer.Sound("sounds/tab.mp3")
 menu = MainMenu()
 while True:
     menu.update(screen)

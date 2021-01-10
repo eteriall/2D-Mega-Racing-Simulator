@@ -21,7 +21,6 @@
         5,
         2.5
       ],
-      "MAX_REVERSE_TIME_STEPS_AMOUNT": 6000,
       "wheels": {
         "left_wheel": {
           "WHEEL_DENSITY": 5,
@@ -94,7 +93,6 @@
         5,
         2.5
       ],
-      "MAX_REVERSE_TIME_STEPS_AMOUNT": 6000,
       "wheels": {
         "left_wheel": {
           "WHEEL_DENSITY": 1,
@@ -174,7 +172,6 @@
         5.4,
         2.7
       ],
-      "MAX_REVERSE_TIME_STEPS_AMOUNT": 6000,
       "wheels": {
         "left_wheel": {
           "WHEEL_DENSITY": 1,
