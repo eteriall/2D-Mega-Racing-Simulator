@@ -11,3 +11,9 @@
 2) Запустите скрипт __game.py__
 
     `python3 game.py`
+
+3) Наслаждайтесь игрой!
+
+## Снимки из игры
+![screenshot1](https://github.com/eteriall/HillClimbRacing/blob/master/screenshots/screenshot1.png)
+![screenshot2](https://github.com/eteriall/HillClimbRacing/blob/master/screenshots/screenshot2.png)
