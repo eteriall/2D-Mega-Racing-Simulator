@@ -233,5 +233,8 @@
    заново.
 
 ## Снимки из игры
+![screenshot0](https://github.com/eteriall/HillClimbRacing/blob/master/source/screenshots/screenshot0.png)
+
 ![screenshot1](https://github.com/eteriall/HillClimbRacing/blob/master/source/screenshots/screenshot1.png)
+
 ![screenshot2](https://github.com/eteriall/HillClimbRacing/blob/master/source/screenshots/screenshot2.png)
