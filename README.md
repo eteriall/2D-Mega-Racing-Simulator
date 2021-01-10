@@ -36,15 +36,15 @@
    следующую структуру:
    ```
    "My-car": {
-    "price": 10000,
-    "preview": "previews/my_car_preview.png",
+    "price": 0,
+    "preview": "previews/my-car-preview.png",
     "parameters": {
       "MAX_FUEL": 100,
-      "MAX_CAR_SPEED": 30,
-      "MAX_CAR_REVERSE_SPEED": 30,
+      "MAX_CAR_SPEED": 15,
+      "MAX_CAR_REVERSE_SPEED": 10,
       "ACCELERATION": 1,
       "ROTATION_SPEED": 1,
-      "BRAKES": 1,
+      "BRAKES": 3,
       "CAR_WIDTH": 4,
       "CAR_HEIGHT": 1,
       "CAR_FRICTION": 30,
@@ -77,8 +77,8 @@
       }
     },
     "sprites": {
-      "body": "cars/my-car.png",
-      "wheel": "wheels/my-tire.png"
+      "body": "cars/my-car-body.png",
+      "wheel": "wheels/my-car-tire.png"
     },
     "upgrades": {
       "MAX_CAR_SPEED": {
@@ -106,7 +106,7 @@
         "levels": 5
       }
     }
-    }
+  }
     ```
 
    В этой структуре находится вся информация об автомобиле - его
