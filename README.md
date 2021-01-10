@@ -1,26 +1,31 @@
-# 2D Mega-Racing Simulator
+# 2D Mega-Racing Simulator 
 
-## Проект для Яндекс.Лицея - 2D Mega-Racing Simulator.
-Гоночный 2D симулятор, написанный на Python 3.8 с использованием библиотеки pygame (2.0.0) и Box2D для симуляции физики в 2D пространстве.
+Гоночный 2D симулятор, написанный на Python 3.8 с использованием библиотеки pygame и Box2D для симуляции физики в 2D пространстве.
+-  [ Скриншоты из игры](https://github.com/eteriall/2D-Mega-Racing-Simulator#фотографии-из-игры)
+-  [ Документация моддинга транспорта](https://github.com/eteriall/2D-Mega-Racing-Simulator#создание-новых-автомобилей)
+-  [Документация моддинга уровней](https://github.com/eteriall/2D-Mega-Racing-Simulator#создание-новых-уровней)
+
+
 
 ## Запуск проекта на своём устройстве
-### Вариант N1
-1. [Скачайте](https://github.com/eteriall/HillClimbRacing/archive/master.zip) проект и запустите игру!
+Хотите поиграть? [Cкачайте последнюю версию игры](https://github.com/eteriall/2D-Mega-Racing-Simulator/releases/download/v1.1/Setup_2D_Mega-Racing_Simulator.exe)!
 
-
-### Вариант N2
 Если вы хотите модифицировать __исходный код__ или просто посмотреть -
 как и что работает:
-1. Установите все необходимые модули для работы игры с помощью следующей
-   команды -
+
+1. Склонируйте этот репозиторий на ваше устройство:
+
+    `git clone https://github.com/eteriall/2D-Mega-Racing-Simulator.git`
+    
+2. Установите все необходимые модули:
 
     `pip install -r requirements.txt`
 
-2. Запустите скрипт __game.py__
+3. Запустите скрипт _game.py_:
 
     `python3 game.py`
 
-3. __Наслаждайтесь игрой!__
+3. __Наслаждайтесь!__
 
 ## Модификация автомобилей, уровней и игровых объектов
 Любой начинающий программист может написать расширение для нашей игры!
