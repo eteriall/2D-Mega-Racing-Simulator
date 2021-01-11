@@ -1,26 +1,32 @@
-# 2D Mega-Racing Simulator
+# 2D Mega-Racing Simulator 
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/eteriall/2D-Mega-Racing-Simulator)
 
-## Проект для Яндекс.Лицея - 2D Mega-Racing Simulator.
-Гоночный 2D симулятор, написанный на Python 3.8 с использованием библиотеки pygame (2.0.0) и Box2D для симуляции физики в 2D пространстве.
-
-## Запуск проекта на своём устройстве
-### Вариант N1
-1. [Скачайте](https://github.com/eteriall/HillClimbRacing/archive/master.zip) проект и запустите игру!
+Гоночный 2D симулятор, написанный на Python 3.8 с использованием библиотеки pygame и Box2D для симуляции физики в 2D пространстве.
+-  [ Скриншоты из игры](https://github.com/eteriall/2D-Mega-Racing-Simulator#фотографии-из-игры)
+-  [ Документация моддинга транспорта](https://github.com/eteriall/2D-Mega-Racing-Simulator#создание-новых-автомобилей)
+-  [Документация моддинга уровней](https://github.com/eteriall/2D-Mega-Racing-Simulator#создание-новых-уровней)
 
 
-### Вариант N2
+
+## Установка
+Хотите поиграть? [Cкачайте последнюю версию игры](https://github.com/eteriall/2D-Mega-Racing-Simulator/releases/download/v1.1/Setup_2D_Mega-Racing_Simulator.exe)!
+
 Если вы хотите модифицировать __исходный код__ или просто посмотреть -
 как и что работает:
-1. Установите все необходимые модули для работы игры с помощью следующей
-   команды -
+
+1. Склонируйте этот репозиторий на ваше устройство:
+
+    `git clone https://github.com/eteriall/2D-Mega-Racing-Simulator.git`
+    
+2. Установите все необходимые модули:
 
     `pip install -r requirements.txt`
 
-2. Запустите скрипт __game.py__
+3. Запустите скрипт _game.py_:
 
     `python3 game.py`
 
-3. __Наслаждайтесь игрой!__
+3. __Наслаждайтесь!__
 
 ## Модификация автомобилей, уровней и игровых объектов
 Любой начинающий программист может написать расширение для нашей игры!
@@ -36,15 +42,15 @@
    следующую структуру:
    ```
    "My-car": {
-    "price": 10000,
-    "preview": "previews/my_car_preview.png",
+    "price": 0,
+    "preview": "previews/my-car-preview.png",
     "parameters": {
       "MAX_FUEL": 100,
-      "MAX_CAR_SPEED": 30,
-      "MAX_CAR_REVERSE_SPEED": 30,
+      "MAX_CAR_SPEED": 15,
+      "MAX_CAR_REVERSE_SPEED": 10,
       "ACCELERATION": 1,
       "ROTATION_SPEED": 1,
-      "BRAKES": 1,
+      "BRAKES": 3,
       "CAR_WIDTH": 4,
       "CAR_HEIGHT": 1,
       "CAR_FRICTION": 30,
@@ -77,8 +83,8 @@
       }
     },
     "sprites": {
-      "body": "cars/my-car.png",
-      "wheel": "wheels/my-tire.png"
+      "body": "cars/my-car-body.png",
+      "wheel": "wheels/my-car-tire.png"
     },
     "upgrades": {
       "MAX_CAR_SPEED": {
@@ -106,7 +112,7 @@
         "levels": 5
       }
     }
-    }
+   }
     ```
 
    В этой структуре находится вся информация об автомобиле - его
@@ -232,6 +238,9 @@
    [скачайте файл](https://github.com/eteriall/HillClimbRacing/blob/master/source/data/levels.json)
    заново.
 
-## Снимки из игры
+## Фотографии из игры
+![screenshot0](https://github.com/eteriall/HillClimbRacing/blob/master/source/screenshots/screenshot0.png)
+
 ![screenshot1](https://github.com/eteriall/HillClimbRacing/blob/master/source/screenshots/screenshot1.png)
+
 ![screenshot2](https://github.com/eteriall/HillClimbRacing/blob/master/source/screenshots/screenshot2.png)
