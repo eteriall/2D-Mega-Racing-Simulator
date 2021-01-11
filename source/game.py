@@ -1657,7 +1657,7 @@ GROUND_TEXTURE = load_image("ground/terrain_ground.png")
 sf_pro_font_36 = pygame.font.Font(
     r"data/SFProDisplay-Regular.ttf", 48)
 sf_pro_font_72 = pygame.font.Font(
-    None, 72)
+    r"data/SFProDisplay-Regular.ttf", 72)
 
 speedometer_bg = load_image("UI/speedometer_bg.png")
 taxometer_bg = load_image("UI/taxometer_bg.png")
